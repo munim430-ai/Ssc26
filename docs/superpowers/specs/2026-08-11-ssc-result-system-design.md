@@ -1,8 +1,23 @@
 # SSC Student Result System — Design Spec
 
 **Date:** 2026-08-11
-**Status:** Approved (Sections 1–5)
+**Status:** Approved (Sections 1–5) — **Revised 2026-08-11** after reviewing the pre-existing scaffold
 **Stack:** Next.js 14 (App Router, TypeScript) + Supabase (cloud Postgres)
+
+> ## Revision note (2026-08-11)
+> A prior session built a substantial Student Portal in `ssc-result-system/src/` that closely matches the reference HTML:
+> - `app/page.tsx` + `components/StudentSearchForm.tsx` — search form with all dropdowns, Roll/Reg toggle for Individual, EIIN/District/Center fields for Institution.
+> - `app/result/page.tsx` + `components/BoardHeader.tsx` + `components/PrintButton.tsx` — result sheet with `.table-striped` tables, green header, Search Again + Print buttons.
+> - `app/globals.css` (146 lines) + `app/bootstrap.min.css` (121 KB real Bootstrap 3.4.1) + `public/logo.png` — faithful visual foundation.
+>
+> **This portal is worth keeping.** The original plan (wipe `src/`, rebuild from scratch) is replaced with an **adapt-in-place** approach:
+> - **Keep** all portal UI components, CSS, and the logo.
+> - **Remove** the client-side CAPTCHA (`StudentSearchForm.tsx`) — spec §11 holds (no CAPTCHA in v1).
+> - **Keep** the "Institution Result" dropdown option and its empty EIIN/District/Center fields, with the existing "Institution result search is not available" message (visual fidelity to the reference, even though the branch is non-functional in v1).
+> - **Replace** the data layer (`lib/data.ts`, `lib/types.ts`) which currently targets a 10-table over-normalized schema that doesn't exist. Rewrite it to target the 3-table schema in §4.
+> - **Build** the missing admin side (auth, middleware, dashboard CRUD with dynamic subject rows) per the original plan.
+>
+> The schema (§4), auth (§5), API (§6), and admin dashboard (§8) sections below are unchanged. Only the student-portal implementation (§7) and the plan's portal tasks change — now "adapt existing" rather than "build new."
 
 ## 1. Goal
 
@@ -190,29 +205,33 @@ No CAPTCHA in v1. Can be layered on later if the public URL gets abused.
 
 CSS ported from `regristation select.html`'s `<style>` block so the look matches exactly: green `#14A44D` header, `.table-striped` tables with green header rows, `.panel` containers, `.btn-success` / `.btn-info` buttons.
 
-### 7.1 Search/login page — `src/app/(public)/page.tsx`
+### 7.1 Search/login page — existing `src/app/page.tsx` + `components/StudentSearchForm.tsx`
 
-Replicates `regristation select.html`:
+**Already built** — replicates `regristation select.html`:
 
-- Green header (`#main-header2`) with govt-logo placeholder + h4/h5 white text.
+- Green header (`#main-header2`) via `components/BoardHeader.tsx`, with `/logo.png`.
 - `.panel` "Please provide the following information to view result".
 - Dropdowns: Board (11), Exam (4), Year (1996–current), Type of Result.
-- **Type of Result:** only "Individual/Detailed Result" is offered in v1 ("Institution Result" needs EIIN/district/center data we don't model — omitted to keep scope honest).
+- **Type of Result:** "Individual/Detailed Result" **and** "Institution Result" both offered. Individual is fully functional; Institution renders its EIIN/District/Center fields but shows "Institution result search is not available in this system." on submit (kept for visual fidelity to the reference).
 - Roll Number + Registration Number fields appear only when Individual is selected (mirrors the reference's `show_result_type()` JS).
-- Submit → `GET /api/results?board=&roll=&reg=` → on success `router.push('/result')` with the result passed via React state/sessionStorage; on 404 show inline `.alert-info`.
+- **CAPTCHA removed** — the prior canvas-based client CAPTCHA is stripped from `StudentSearchForm.tsx`. Submit goes straight to lookup.
+- Submit → `GET /api/results?board=&roll=&reg=` → on success `router.push('/result?...')`; on miss show inline `.alert-danger` "Result not found…".
 - Footer `#dev_info`: "Powered by Inter-Education Board Coordination Committee" etc.
 
-### 7.2 Result sheet — `src/app/(public)/result/page.tsx`
+**Changes required to the existing form:** delete all CAPTCHA state/logic (`captcha`, `captchaCode`, `captchaDataUrl`, `generateCaptcha`, the captcha `<div>` row, the captcha-check in `handleSubmit`); leave everything else.
 
-Replicates `WEB BASED RESULT PUBLICATION SYSTEM…html`:
+### 7.2 Result sheet — existing `src/app/result/page.tsx` + `components/PrintButton.tsx`
 
-- `.page-header h3` "Result of {Exam Name} Examination - {Year}".
-- `.btn-group` with "Search Again" (green) + "Print" (cyan) at top and bottom.
+**Already built** — replicates `WEB BASED RESULT PUBLICATION SYSTEM…html`:
+
+- `.page-header h3` "Result of {Exam} Examination - {Year}".
+- `.btn-group` with "Search Again" (green `Link`) + `PrintButton` (cyan, `window.print()`).
 - **Table 1 — Student Information Summary** (`.table-striped`, `colspan=4` header): Roll No / Registration No, Name, Father, Mother, Board / Session, Group / Type / Gender, Result / DOB, Institute.
-- **Table 2 — Subject-wise Grade/Marks**: Subject Code, Subject Name, Grade. Rows from `subjects` JSONB.
-- **Table 3 — Subject-wise Grade/Marks for Continuous Assessment** (rendered only if `ca_subjects` non-empty): same columns, rows from `ca_subjects`.
-- **Remarks** (custom teacher remarks): shown in an `.alert-info` box beneath the tables — the reference has no remarks field, so this is the natural fit for the existing style.
-- Print: `window.print()` with the `@media print` rules from the reference CSS (hides buttons, expands tables).
+- **Table 2 — Subject-wise Grade/Marks**: Subject Code, Subject Name, Grade. Rows from `student.grades` where `is_continuous_assessment` is false.
+- **Table 3 — Subject-wise Grade/Marks for Continuous Assessment** (rendered only if any CA grades exist): same columns.
+- **Remarks** in an `.alert-info` box beneath the tables (joining `student.remarks[].remark_text`).
+
+**Changes required to the existing page:** it currently reads from a deeply-nested relational shape (`student.grades[].subject.code`, `student.board.name`, etc.) produced by the old 10-table schema. After the schema swap it must read from the flatter `results` row with JSONB `subjects`/`ca_subjects` maps. Concretely: replace the `grades.filter(...)` logic with `Object.entries(result.subjects)` / `Object.entries(result.ca_subjects)`, and replace `student.board?.name` with `result.board` (looked up against the `boards` table for display name).
 
 ## 8. Frontend — Admin Dashboard
 
@@ -256,8 +275,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 ## 11. Out of Scope (v1)
 
-- Institution / district / center / EIIN result types (only Individual result is supported).
-- CAPTCHA on the public search.
+- Institution / district / center / EIIN result **data** — the dropdown option and fields are kept in the UI for fidelity, but the branch returns "not available" (no EIIN/center table is modeled).
+- CAPTCHA on the public search — **removed** from the existing form.
 - Multiple admin accounts / role management.
 - Bulk import of results.
 - PDF download / testimonial generation.

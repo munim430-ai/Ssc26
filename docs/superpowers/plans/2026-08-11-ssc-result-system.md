@@ -25,6 +25,8 @@
 
 ## File Structure
 
+> **Revision (2026-08-11):** a prior session built a faithful Student Portal in `src/app/page.tsx`, `src/app/result/page.tsx`, `src/components/{BoardHeader,StudentSearchForm,PrintButton}.tsx`, `src/app/globals.css`, `src/app/bootstrap.min.css`, and `public/logo.png`. **We keep all of it.** Tasks below adapt the existing files rather than creating new ones for the portal.
+
 ```
 ssc-result-system/
 ├─ .env.local                     # secrets (gitignored)
@@ -32,67 +34,77 @@ ssc-result-system/
 ├─ package.json                   # deps + dev script on port 3001
 ├─ next.config.js
 ├─ tsconfig.json
-├─ middleware.ts                  # guards /admin/*
-├─ supabase/migrations/001_schema.sql
-├─ vitest.config.ts
+├─ middleware.ts                  # NEW — guards /admin/*
+├─ supabase/migrations/001_schema.sql   # NEW — replaces old 10-table schema
+├─ vitest.config.ts               # NEW
+├─ public/logo.png                # EXISTS
 └─ src/
    ├─ app/
-   │  ├─ layout.tsx               # root layout, imports globals.css
-   │  ├─ globals.css              # shared resets + admin styles
-   │  ├─ (public)/
-   │  │  ├─ page.tsx              # search/login form
-   │  │  ├─ result/page.tsx       # result sheet
-   │  │  └─ portal.css            # port of reference portal CSS
-   │  ├─ admin/
-   │  │  ├─ login/page.tsx        # password form
-   │  │  ├─ logout/route.ts       # clears cookie
-   │  │  ├─ layout.tsx            # guarded shell
-   │  │  ├─ page.tsx              # dashboard (list + form)
+   │  ├─ layout.tsx               # EXISTS — keep
+   │  ├─ globals.css              # EXISTS — keep; add admin styles at bottom
+   │  ├─ bootstrap.min.css        # EXISTS — keep (real Bootstrap 3.4.1)
+   │  ├─ page.tsx                 # EXISTS — keep (portal home)
+   │  ├─ result/page.tsx          # EXISTS — REWRITE data reads to new schema
+   │  ├─ admin/                   # NEW — auth + dashboard
+   │  │  ├─ login/page.tsx
+   │  │  ├─ login/route.ts
+   │  │  ├─ logout/route.ts
+   │  │  ├─ layout.tsx
+   │  │  ├─ page.tsx              # replaces the existing stub
    │  │  └─ admin.css
-   │  └─ api/results/
+   │  └─ api/results/             # NEW
    │     ├─ route.ts              # GET list/lookup, POST create
    │     └─ [id]/route.ts         # GET, PATCH, DELETE
+   ├─ components/
+   │  ├─ BoardHeader.tsx          # EXISTS — keep
+   │  ├─ PrintButton.tsx          # EXISTS — keep
+   │  └─ StudentSearchForm.tsx    # EXISTS — EDIT: strip CAPTCHA
    └─ lib/
-      ├─ supabase-browser.ts      # anon-key client
-      ├─ supabase-server.ts       # service-role client (server only)
-      ├─ auth.ts                  # HMAC sign/verify cookie
-      ├─ grades.ts                # GRADES const + validator
-      └─ types.ts                 # Result, SubjectEntry, etc.
+      ├─ supabase-browser.ts      # NEW (anon client)
+      ├─ supabase-server.ts       # EXISTS — keep the createServerClient() factory
+      ├─ auth.ts                  # NEW — HMAC sign/verify cookie
+      ├─ grades.ts                # NEW — GRADES const + validator
+      ├─ types.ts                 # EXISTS — REWRITE for new schema
+      └─ data.ts                  # EXISTS — REWRITE for new schema
 ```
 
-**Responsibility split:**
+**Responsibility split (unchanged):**
 - `lib/auth.ts` — pure crypto; no Next imports; unit-testable.
 - `lib/grades.ts` — pure const + validator; unit-testable.
 - `lib/supabase-browser.ts` — anon client used only in Client Components.
-- `lib/supabase-server.ts` — service-role client used only in Route Handlers / Server Components; never imported by browser code.
+- `lib/supabase-server.ts` — service-role factory used only in Route Handlers / Server Components; never imported by browser code.
 - API routes are thin controllers: parse → auth check → call Supabase → shape response.
 - Public components never import `supabase-server.ts` or `auth.ts`.
 
 ---
 
-### Task 1: Project scaffold and config
+### Task 1: Project config (adapt existing scaffold)
 
 **Files:**
-- Modify: `ssc-result-system/package.json`
-- Modify: `ssc-result-system/tsconfig.json`
-- Modify: `ssc-result-system/next.config.js`
+- Modify: `ssc-result-system/package.json` (add vitest, set dev port 3001)
+- Modify: `ssc-result-system/tsconfig.json` (no change expected — verify)
+- Keep as-is: `ssc-result-system/next.config.js`
 - Create: `ssc-result-system/.env.example`
 - Create: `ssc-result-system/.env.local`
 - Create: `ssc-result-system/.gitignore`
 - Create: `ssc-result-system/vitest.config.ts`
-- Delete: everything under `ssc-result-system/src/` (old over-normalized scaffold) and `ssc-result-system/supabase/migrations/001_initial_schema.sql`
+- Delete: `ssc-result-system/supabase/migrations/001_initial_schema.sql` (old 10-table schema; replaced in Task 2)
+
+**Do NOT delete** anything under `src/` — the portal UI is kept and adapted in later tasks.
 
 **Interfaces:**
 - Produces: a runnable `npm install && npm run dev` on port 3001.
 
-- [ ] **Step 1: Wipe the old scaffold's src and migrations**
+- [ ] **Step 1: Delete only the old migration file**
 
 Run from `D:\SSC\ssc-result-system`:
 ```bash
-rm -rf src supabase
+rm -f supabase/migrations/001_initial_schema.sql
 ```
 
-- [ ] **Step 2: Write `package.json`**
+- [ ] **Step 2: Update `package.json`** — add vitest, set dev/start ports to 3001
+
+Replace the `scripts` and `devDependencies` blocks so the file reads:
 
 ```json
 {
@@ -126,41 +138,54 @@ rm -rf src supabase
 }
 ```
 
-- [ ] **Step 3: Write `tsconfig.json`**
-
 ```json
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+  "name": "ssc-result-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "dependencies": {
+    "next": "14.2.0",
+    "react": "18.3.0",
+    "react-dom": "18.3.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/ssr": "^0.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.0",
+    "@types/react": "18.3.0",
+    "@types/react-dom": "18.3.0",
+    "typescript": "5.5.0",
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.0",
+    "vitest": "^1.6.0"
+  }
 }
 ```
 
-- [ ] **Step 4: Write `next.config.js`**
+- [ ] **Step 3: Verify existing `tsconfig.json`**
 
-```js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-};
-module.exports = nextConfig;
+The existing file already targets ES2020 with `strict: true`, `jsx: preserve`, and the `@/*` path alias — no changes needed. Confirm:
+
+```bash
+cd /d/SSC/ssc-result-system
+cat tsconfig.json
 ```
+Expected: `paths: { "@/*": ["./src/*"] }` and `strict: true`. If the alias is missing, add it; otherwise leave the file alone.
+
+- [ ] **Step 4: Verify existing `next.config.js`**
+
+```bash
+cat next.config.js
+```
+Expected: a minimal config with `reactStrictMode`. Leave as-is.
 
 - [ ] **Step 5: Write `.gitignore`**
 
@@ -220,14 +245,19 @@ cd /d/SSC/ssc-result-system
 npm install
 ```
 
-(Do not start dev yet — there's no `src/app` yet. We verify boot in Task 8.)
+Then verify the existing portal compiles (it will throw at runtime because `lib/data.ts` still points at the old schema — that's fine; we only need it to *typecheck/build*):
+
+```bash
+npm run build
+```
+Expected: build may report errors from `lib/data.ts` / `lib/types.ts` referencing old tables. **That's expected** — Tasks 3 and the data-layer rewrite fix it. If the build fails for *unrelated* reasons (missing deps, syntax), fix those now.
 
 - [ ] **Step 10: Commit**
 
 ```bash
 cd /d/SSC
-git add ssc-result-system/package.json ssc-result-system/tsconfig.json ssc-result-system/next.config.js ssc-result-system/.gitignore ssc-result-system/.env.example ssc-result-system/vitest.config.ts
-git commit -m "chore: scaffold ssc-result-system (port 3001, vitest, supabase deps)"
+git add ssc-result-system/package.json ssc-result-system/.gitignore ssc-result-system/.env.example ssc-result-system/vitest.config.ts
+git commit -m "chore: config for ssc-result-system (port 3001, vitest); keep existing portal"
 ```
 
 ---
@@ -328,15 +358,17 @@ git commit -m "feat(db): schema, RLS, seed for boards/exams/results"
 
 ---
 
-### Task 3: Types and grade vocabulary
+### Task 3: Types and grade vocabulary (replace existing `types.ts`)
 
 **Files:**
-- Create: `ssc-result-system/src/lib/types.ts`
+- Replace: `ssc-result-system/src/lib/types.ts` (currently holds the old 10-table type set — overwrite it)
 - Create: `ssc-result-system/src/lib/grades.ts`
 - Create: `ssc-result-system/src/lib/grades.test.ts`
 
 **Interfaces:**
-- Produces: `Grade` type, `GRADES` array, `isGrade(x): x is Grade`, `SubjectEntry` type, `Result` type (DB row), `ResultInput` type (admin form payload).
+- Produces: `Grade` type, `GRADES` array, `isGrade(x): x is Grade`, `SubjectEntry` type, `Result` type (DB row), `ResultInput` type (admin form payload), `Board`, `Exam` reference-table types.
+
+> **Note:** The old `types.ts` exports `EducationBoard`, `Examination`, `ExaminationYear`, `SubjectGroup`, `StudentType`, `Gender`, `Subject`, `Student`, `StudentGrade` — these are referenced by the existing `lib/data.ts` and `components/StudentSearchForm.tsx`. Those files are rewritten/edited in Task 3b and Task 13, so removing the old types here will temporarily break compilation. That's fine; the build only needs to be green again after Task 14.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -381,7 +413,7 @@ export function isGrade(x: unknown): x is Grade {
 }
 ```
 
-- [ ] **Step 4: Write `types.ts`**
+- [ ] **Step 4: Write `types.ts`** (overwrite the existing file)
 
 ```ts
 export type SubjectEntry = { name: string; grade: string };
@@ -414,6 +446,10 @@ export type Result = {
 
 // Payload the admin form sends (no id/timestamps)
 export type ResultInput = Omit<Result, 'id' | 'created_at' | 'updated_at'>;
+
+// Reference tables
+export type Board = { code: string; name: string };
+export type Exam = { code: string; name: string };
 ```
 
 - [ ] **Step 5: Run test to verify pass**
@@ -429,6 +465,115 @@ Expected: PASS (3 tests).
 cd /d/SSC
 git add ssc-result-system/src/lib/
 git commit -m "feat(lib): result types and grade vocabulary"
+```
+
+---
+
+### Task 3b: Rewrite data layer for the new schema
+
+The existing `src/lib/data.ts` queries the old 10-table model. We replace its contents so the existing portal pages (`app/page.tsx`, `app/result/page.tsx`) get data from the new `results`/`boards`/`exams` tables. The public function names the portal already imports (`getEducationBoards`, `getExaminations`, `getExaminationYears`, `searchStudent`) are preserved so the calling pages need minimal changes.
+
+**Files:**
+- Replace: `ssc-result-system/src/lib/data.ts`
+
+**Interfaces:**
+- Consumes: `createServerClient` from `@/lib/supabase-server`, types `Board`, `Exam`, `Result` from `@/lib/types`.
+- Produces: `getEducationBoards(): Promise<Board[]>`, `getExaminations(): Promise<Exam[]>`, `getExaminationYears(): Promise<{year:number}[]>`, `searchStudent(board, roll, examYear, reg?): Promise<Result | null>`, `getResultById(id): Promise<Result | null>`, `calculateGPA(result): number | null`.
+
+- [ ] **Step 1: Verify `createServerClient` exists in `supabase-server.ts`**
+
+```bash
+cd /d/SSC/ssc-result-system
+grep "export function createServerClient\|export const createServerClient" src/lib/supabase-server.ts
+```
+Expected: a match. If the existing factory is named differently (e.g. default export), adapt the import in Step 2 to match. (Do not change `supabase-server.ts` here — Task 5 may add a `supabaseBrowser`; the server factory stays.)
+
+- [ ] **Step 2: Overwrite `src/lib/data.ts`**
+
+```ts
+import { createServerClient } from '@/lib/supabase-server';
+import type { Board, Exam, Result } from '@/lib/types';
+
+// ---- Reference data for the search-form dropdowns -----------------------
+export async function getEducationBoards(): Promise<Board[]> {
+  const sb = createServerClient();
+  const { data, error } = await sb.from('boards').select('*').order('name');
+  if (error) throw error;
+  return (data as Board[]) ?? [];
+}
+
+export async function getExaminations(): Promise<Exam[]> {
+  const sb = createServerClient();
+  const { data, error } = await sb.from('exams').select('*').order('name');
+  if (error) throw error;
+  return (data as Exam[]) ?? [];
+}
+
+// Years are generated client-side in the reference; we return a static list
+// so the existing StudentSearchForm stays simple. Range: 1996..currentYear.
+export async function getExaminationYears(): Promise<{ year: number }[]> {
+  const current = new Date().getFullYear();
+  const years: { year: number }[] = [];
+  for (let y = current; y >= 1996; y--) years.push({ year: y });
+  return years;
+}
+
+// ---- Lookup -------------------------------------------------------------
+// Matches the new (board, roll_number, registration_no) unique key.
+// `examYear` is accepted for signature compatibility but the new schema uses
+// the unique triple, so it's only used as an extra filter for safety.
+export async function searchStudent(
+  roll: number,
+  boardCode: string,
+  _examCode: string,
+  examYear?: number,
+  reg?: number,
+): Promise<Result | null> {
+  const sb = createServerClient();
+  let q = sb
+    .from('results')
+    .select('*')
+    .eq('roll_number', roll)
+    .eq('board', boardCode);
+  if (typeof examYear === 'number') q = q.eq('exam_year', examYear);
+  if (typeof reg === 'number') q = q.eq('registration_no', reg);
+  const { data, error } = await q.limit(1).maybeSingle();
+  if (error) return null;
+  return (data as Result) ?? null;
+}
+
+export async function getResultById(id: string): Promise<Result | null> {
+  const sb = createServerClient();
+  const { data, error } = await sb.from('results').select('*').eq('id', id).maybeSingle();
+  if (error) return null;
+  return (data as Result) ?? null;
+}
+
+// ---- GPA ----------------------------------------------------------------
+const GRADE_POINTS: Record<string, number> = {
+  'A+': 5.0, 'A': 4.0, 'A-': 3.5, 'B+': 3.0, 'B': 2.5, 'B-': 2.0,
+  'C': 1.5, 'D': 1.0, 'F': 0.0,
+};
+
+export function calculateGPA(result: Pick<Result, 'subjects'>): number | null {
+  const entries = Object.values(result.subjects);
+  if (entries.length === 0) return null;
+  let sum = 0, n = 0;
+  for (const e of entries) {
+    const p = GRADE_POINTS[e.grade];
+    if (typeof p === 'number') { sum += p; n++; }
+  }
+  if (n === 0) return null;
+  return Math.round((sum / n) * 100) / 100;
+}
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+cd /d/SSC
+git add ssc-result-system/src/lib/data.ts
+git commit -m "feat(lib): rewrite data layer for new results/boards/exams schema"
 ```
 
 ---
@@ -1478,366 +1623,470 @@ git commit -m "feat(admin): dashboard with dynamic subject rows + list/edit/dele
 
 ---
 
-### Task 13: Student portal — search page
+### Task 13: Adapt existing portal — strip CAPTCHA, align with new lookup
+
+The search page (`src/app/page.tsx`) and form (`src/components/StudentSearchForm.tsx`) already exist and faithfully replicate `regristation select.html`. **We keep them** and make two edits:
+1. Remove the client-side CAPTCHA (state, `generateCaptcha`, the captcha `<div>` row, the captcha check in `handleSubmit`).
+2. Simplify `handleSubmit` to call the new `GET /api/results?board=&roll=&reg=` lookup directly, then `router.push('/result?...')`.
+
+`src/app/page.tsx` needs no change — it already calls `getEducationBoards`, `getExaminations`, `getExaminationYears` (all preserved in the rewritten `lib/data.ts` from Task 3b) and passes them to `StudentSearchForm`.
 
 **Files:**
-- Create: `ssc-result-system/src/app/(public)/portal.css`
-- Create: `ssc-result-system/src/app/(public)/page.tsx`
+- Edit: `ssc-result-system/src/components/StudentSearchForm.tsx`
 
 **Interfaces:**
-- Consumes: `GET /api/results?board=&roll=&reg=`; on success stores result JSON in `sessionStorage` key `lastResult` and `router.push('/result')`.
-- Produces: a faithful replica of `regristation select.html` (green header, dropdowns, Roll/Reg fields shown only when Individual selected).
+- Consumes: `EducationBoard`/`Examination`/`ExaminationYear` props (now mapped to the new `Board`/`Exam`/{year} types — see Step 2 for the type import fix); `GET /api/results?board=&roll=&reg=`.
+- Produces: a CAPTCHA-free search form that navigates to `/result?board=&exam=&year=&roll=&reg=` on a successful match.
 
-- [ ] **Step 1: Write `portal.css`** (excerpt of the reference's `<style>` that matters)
+- [ ] **Step 1: Read the current `StudentSearchForm.tsx`**
 
-```css
-#main-header2 {
-  height: auto; margin: 15px 0; background-color: #14A44D;
-  padding: 10px; text-align: center; border-radius: 10px;
-  display: flex; align-items: center; gap: 12px;
-}
-#main-header2 h4, #main-header2 h5 { color: #fff; margin: 2px 0; }
-#page-wrapper { padding: 0 50px; }
-@media (max-width: 767px) { #page-wrapper { padding: 0 10px; } }
-.page-header { text-align: center; }
-.panel {
-  margin-bottom: 20px; background-color: #fff; border: 1px solid transparent;
-  border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.05);
-}
-.panel-default { border-color: #ddd; }
-.panel-heading {
-  padding: 10px 15px; border-bottom: 1px solid transparent;
-  border-top-left-radius: 3px; border-top-right-radius: 3px;
-  color: #333; background-color: #f5f5f5; border-color: #ddd;
-}
-.panel-body { padding: 15px; }
-.form-group { margin-bottom: 15px; }
-.alert { padding: 10px; border-radius: 10px; margin-bottom: 12px; }
-.alert-info { background-color: #e6f7ff; color: #0c5460; border: 1px solid #bee5eb; }
-.center-block { display: block; margin-left: auto; margin-right: auto; }
-.form-row { display: grid; grid-template-columns: 5fr 7fr; gap: 8px 16px; align-items: center; margin-bottom: 10px; }
-.form-row label { font-weight: 700; }
-#dev_info { background:#DCDCDC; padding:10px; border-radius:10px; margin:15px 0; text-align:center; }
-#dev_info p { text-align:center; line-height:1.3; font-size:11px; margin: 2px 0; }
-.govt-logo { width: 80px; height: 80px; padding: 5px; }
+```bash
+cd /d/SSC/ssc-result-system
+cat src/components/StudentSearchForm.tsx
 ```
+Confirm it has: `captcha`/`captchaCode`/`captchaDataUrl` state, a `generateCaptcha` function, a `useEffect` that calls `generateCaptcha`, the captcha check in `handleSubmit`, and the captcha `<div>` row (id `col_10`). All of these get deleted in Step 2.
 
-- [ ] **Step 2: Write `page.tsx`**
-
-`ssc-result-system/src/app/(public)/page.tsx`:
+- [ ] **Step 2: Replace `src/components/StudentSearchForm.tsx`** with the cleaned version
 
 ```tsx
-'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import './portal.css';
+'use client'
 
-const BOARDS = [
-  ['barisal','Barisal'],['chittagong','Chittagong'],['comilla','Comilla'],['dhaka','Dhaka'],
-  ['dinajpur','Dinajpur'],['jessore','Jessore'],['madrasah','Madrasah'],['mymensingh','Mymensingh'],
-  ['rajshahi','Rajshahi'],['sylhet','Sylhet'],['tec','Technical'],
-] as const;
-const EXAMS = [['jsc','JSC/JDC'],['ssc','SSC/Dakhil/Equivalent'],['hsc','HSC/Alim/Equivalent'],['dibs','DIBS (Diploma in Business Studies)']] as const;
-const YEARS = Array.from({ length: new Date().getFullYear() - 1995 }, (_, i) => String(new Date().getFullYear() - i));
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import type { Board, Exam } from '@/lib/types'
 
-export default function PortalSearchPage() {
-  const router = useRouter();
-  const [board, setBoard] = useState('');
-  const [exam, setExam] = useState('');
-  const [year, setYear] = useState('');
-  const [resultType, setResultType] = useState('');
-  const [roll, setRoll] = useState('');
-  const [reg, setReg] = useState('');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
+interface Props {
+  boards: Board[]
+  exams: Exam[]
+  years: { year: number }[]
+}
 
-  const individual = resultType === '1';
+export default function StudentSearchForm({ boards, exams, years }: Props) {
+  const router = useRouter()
+  const [board, setBoard] = useState('')
+  const [exam, setExam] = useState('')
+  const [year, setYear] = useState('')
+  const [resultType, setResultType] = useState('')
+  const [roll, setRoll] = useState('')
+  const [reg, setReg] = useState('')
+  const [eiin, setEiin] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(''); setBusy(true);
-    if (!individual) { setBusy(false); return; }
-    if (!board || !roll || !reg) {
-      setErr('Please fill Board, Roll and Registration.');
-      setBusy(false); return;
+  const showIndividual = resultType === '1'
+  const showInstitution = resultType === '2'
+  const showActionFields = resultType !== ''
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMsg('')
+
+    if (!board || !exam || !year || !resultType) {
+      setErrorMsg('Please choose Exam, Year, Board first.')
+      return
     }
-    const r = await fetch(`/api/results?board=${encodeURIComponent(board)}&roll=${encodeURIComponent(roll)}&reg=${encodeURIComponent(reg)}`);
-    setBusy(false);
-    if (r.ok) {
-      const data = await r.json();
-      sessionStorage.setItem('lastResult', JSON.stringify(data.result));
-      router.push('/result');
-    } else if (r.status === 404) {
-      setErr('No result found for the given credentials.');
-    } else {
-      setErr('Something went wrong. Please try again.');
+
+    setLoading(true)
+    try {
+      if (showIndividual) {
+        if (!roll) {
+          setErrorMsg('Please enter Roll Number.')
+          setLoading(false)
+          return
+        }
+        const params = new URLSearchParams({ board, exam, year, roll })
+        if (reg) params.set('reg', reg)
+        // Verify the result exists before navigating; the result page also re-reads it.
+        const res = await fetch(`/api/results?${params.toString()}`)
+        if (!res.ok) {
+          setErrorMsg('Result not found. Please check your credentials.')
+          setLoading(false)
+          return
+        }
+        router.push(`/result?${params.toString()}`)
+      } else if (showInstitution) {
+        if (!eiin) {
+          setErrorMsg('Please enter EIIN Number of Institution.')
+          setLoading(false)
+          return
+        }
+        setErrorMsg('Institution result search is not available in this system.')
+        setLoading(false)
+      }
+    } catch {
+      setErrorMsg('An error occurred. Please try again.')
+      setLoading(false)
     }
   }
 
   return (
-    <div className="container-fluid">
-      <div id="main-header2">
-        <div className="govt-logo" aria-hidden style={{
-          background: '#fff', borderRadius: 8, flex: '0 0 80px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#14A44D', fontWeight: 700,
-        }}>GOVT</div>
-        <div style={{ flex: 1 }}>
-          <h4>WEB BASED RESULT PUBLICATION SYSTEM FOR EDUCATION BOARD</h4>
-          <h5>JSC/JDC/SSC/DAKHIL/HSC/ALIM AND EQUIVALENT EXAMINATION</h5>
-        </div>
-      </div>
-
-      <div id="page-wrapper">
-        <div className="panel panel-default">
-          <div className="panel-heading">Please provide the following information to view result</div>
-          <div className="panel-body">
-            <form onSubmit={submit}>
-              <div className="form-row">
-                <label htmlFor="board">Name of Board</label>
-                <select id="board" className="form-control" value={board} onChange={(e) => setBoard(e.target.value)} required>
-                  <option value="">Select One</option>
-                  {BOARDS.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
-                </select>
-
-                <label htmlFor="exam">Name of Examination</label>
-                <select id="exam" className="form-control" value={exam} onChange={(e) => setExam(e.target.value)} required>
-                  <option value="">Select One</option>
-                  {EXAMS.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
-                </select>
-
-                <label htmlFor="year">Year of Examination</label>
-                <select id="year" className="form-control" value={year} onChange={(e) => setYear(e.target.value)} required>
-                  <option value="">Select One</option>
-                  {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-                </select>
-
-                <label htmlFor="rt" style={{ color: 'red' }}>Type of Result</label>
-                <select id="rt" className="form-control" value={resultType} onChange={(e) => setResultType(e.target.value)} required>
-                  <option value="">Select One</option>
-                  <option value="1">Individual/Detailed Result</option>
-                </select>
-
-                {individual && <>
-                  <label htmlFor="roll">Roll Number of Examinee</label>
-                  <input id="roll" className="form-control" type="number" value={roll}
-                    onChange={(e) => setRoll(e.target.value)} required />
-                  <label htmlFor="reg">Registration Number of Examinee</label>
-                  <input id="reg" className="form-control" type="number" value={reg}
-                    onChange={(e) => setReg(e.target.value)} required />
-                </>}
+    <div className="panel panel-default">
+      <div className="panel-heading">Please provide the following information to view result</div>
+      <div className="panel-body">
+        <div className="row">
+          <div className="col-md-12">
+            <form role="form" onSubmit={handleSubmit}>
+              {/* Name of Board */}
+              <div className="row" id="col_1">
+                <div id="row_board">
+                  <div className="form-group col-md-5"><label htmlFor="board">Name of Board</label></div>
+                  <div className="form-group col-md-7">
+                    <select id="board" name="board" className="form-control" required value={board} onChange={(e) => setBoard(e.target.value)}>
+                      <option value="">Select One</option>
+                      {boards.map((b) => <option key={b.code} value={b.code}>{b.name}</option>)}
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              {err && <div className="alert alert-info">{err}</div>}
-
-              <div style={{ textAlign: 'center', marginTop: 8 }}>
-                <button className="btn btn-success center-block" type="submit" disabled={busy}>
-                  {busy ? 'Searching…' : 'View Result'}
-                </button>
+              {/* Name of Examination */}
+              <div className="row" id="col_2">
+                <div id="row_exam">
+                  <div className="form-group col-md-5"><label htmlFor="exam">Name of Examination</label></div>
+                  <div className="form-group col-md-7">
+                    <select id="exam" name="exam" className="form-control" required value={exam} onChange={(e) => setExam(e.target.value)}>
+                      <option value="">Select One</option>
+                      {exams.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}
+                    </select>
+                  </div>
+                </div>
               </div>
+
+              {/* Year of Examination */}
+              <div className="row" id="col_3">
+                <div id="row_year">
+                  <div className="form-group col-md-5"><label htmlFor="year">Year of Examination</label></div>
+                  <div className="form-group col-md-7">
+                    <select id="year" name="year" className="form-control" required value={year} onChange={(e) => setYear(e.target.value)}>
+                      <option value="">Select One</option>
+                      {years.map((y) => <option key={y.year} value={y.year}>{y.year}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Type of Result */}
+              <div className="row" id="col_4">
+                <div id="row_result_type">
+                  <div className="form-group col-md-5"><label htmlFor="result_type"><font color="red">Type of Result</font></label></div>
+                  <div className="form-group col-md-7">
+                    <select id="result_type" name="result_type" className="form-control" required value={resultType} onChange={(e) => setResultType(e.target.value)}>
+                      <option value="">Select One</option>
+                      <option value="1">Individual/Detailed Result</option>
+                      <option value="2">Institution Result</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Roll Number */}
+              <div className="row" id="col_5">
+                <div id="row_roll" style={{ display: showIndividual ? '' : 'none' }}>
+                  <div className="form-group col-md-5"><label htmlFor="roll">Roll Number of Examinee</label></div>
+                  <div className="form-group col-md-7">
+                    <input className="form-control" type="number" name="roll" id="roll" required={showIndividual} value={roll} onChange={(e) => setRoll(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Registration Number */}
+              <div className="row" id="col_6">
+                <div id="row_reg" style={{ display: showIndividual ? '' : 'none' }}>
+                  <div className="form-group col-md-5"><label htmlFor="reg">Registration Number of Examinee</label></div>
+                  <div className="form-group col-md-7">
+                    <input className="form-control" type="number" name="reg" id="reg" value={reg} onChange={(e) => setReg(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* EIIN Number (Institution — non-functional in v1, kept for fidelity) */}
+              <div className="row" id="col_7">
+                <div id="row_eiin" style={{ display: showInstitution ? '' : 'none' }}>
+                  <div className="form-group col-md-5">
+                    <label htmlFor="eiin">EIIN Number of Institution</label>
+                  </div>
+                  <div className="form-group col-md-7">
+                    <input className="form-control" type="number" name="eiin" id="eiin" required={showInstitution} value={eiin} onChange={(e) => setEiin(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <div className="row" id="col_11">
+                <div id="row_submit" style={{ display: showActionFields ? '' : 'none' }}>
+                  <div className="form-group"><label htmlFor="submit"></label></div>
+                  <div className="form-group">
+                    <input className="btn btn-success center-block" type="submit" name="submit" id="submit" value={loading ? 'Loading...' : 'View Result'} disabled={loading} />
+                  </div>
+                </div>
+              </div>
+
+              {errorMsg && (
+                <div className="alert alert-danger text-center" role="alert" style={{ marginTop: '10px' }}>
+                  {errorMsg}
+                </div>
+              )}
             </form>
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+```
 
+Key differences from the original:
+- **CAPTCHA removed** — no `captcha`/`captchaCode`/`captchaDataUrl` state, no `generateCaptcha`, no `useEffect`, no `col_10` row, no captcha check.
+- **Types** — props are now `Board[]`, `Exam[]`, `{year:number}[]` (matches the new `types.ts` + `data.ts`). Option `key`/`value` use `b.code`/`x.code`/`y.year` (the new flat columns) instead of `b.id`/`x.id`/`y.id`.
+- **Institution fields simplified** — kept the EIIN field (no Tree/List buttons, since those opened external finders we don't have); District/Center dropdowns removed (they were empty stubs).
+
+- [ ] **Step 3: Verify `src/app/page.tsx` still compiles**
+
+```bash
+cd /d/SSC/ssc-result-system
+npx tsc --noEmit
+```
+Expected: no type errors. (`page.tsx` imports `BoardHeader` + `StudentSearchForm` + three data functions — all preserved.)
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd /d/SSC
+git add ssc-result-system/src/components/StudentSearchForm.tsx
+git commit -m "feat(portal): strip CAPTCHA; align search form with new schema/types"
+```
+
+---
+
+### Task 14: Adapt existing result sheet to the new flat schema
+
+The result page (`src/app/result/page.tsx`) already replicates `WEB BASED RESULT PUBLICATION SYSTEM…html` — green header, `.table-striped` tables, Search Again + Print buttons, remarks box. **We keep the JSX layout** and only change the **data reads**: the old deeply-nested `student.grades[].subject.code` / `student.board.name` shape becomes the flat `result.subjects` / `result.ca_subjects` JSONB maps + `result.board` scalar.
+
+**Files:**
+- Edit: `ssc-result-system/src/app/result/page.tsx`
+
+**Interfaces:**
+- Consumes: `searchStudent` from `@/lib/data` (rewritten in Task 3b); `Result` from `@/lib/types`; `getEducationBoards` to resolve `result.board` (code) → display name.
+- Produces: a result sheet that reads from the new `results` row shape.
+
+- [ ] **Step 1: Replace `src/app/result/page.tsx`** with the schema-aligned version
+
+```tsx
+import Link from 'next/link'
+import BoardHeader from '@/components/BoardHeader'
+import PrintButton from '@/components/PrintButton'
+import { searchStudent, getEducationBoards } from '@/lib/data'
+import type { Result, SubjectEntry } from '@/lib/types'
+
+export const dynamic = 'force-dynamic'
+
+interface Props {
+  searchParams: {
+    board?: string
+    exam?: string
+    year?: string
+    roll?: string
+    reg?: string
+  }
+}
+
+const EXAM_NAMES: Record<string, string> = {
+  jsc: 'JSC or Equivalent',
+  ssc: 'SSC or Equivalent',
+  hsc: 'HSC or Equivalent',
+  dibs: 'DIBS',
+}
+
+export default async function ResultPage({ searchParams }: Props) {
+  const { board, exam, year, roll, reg } = searchParams
+
+  let result: Result | null = null
+  let notFound = false
+
+  if (board && roll) {
+    result = await searchStudent(
+      parseInt(roll),
+      board,
+      exam ?? '',
+      year ? parseInt(year) : undefined,
+      reg ? parseInt(reg) : undefined,
+    )
+    if (!result) notFound = true
+  } else {
+    notFound = true
+  }
+
+  // Resolve board code -> display name for the summary table.
+  let boardName = result?.board?.toUpperCase() ?? ''
+  if (result) {
+    const boards = await getEducationBoards()
+    const hit = boards.find((b) => b.code === result!.board)
+    if (hit) boardName = hit.name.toUpperCase()
+  }
+
+  const examHeader = `${EXAM_NAMES[exam ?? ''] ?? (exam?.toUpperCase() ?? '')} Examination - ${year ?? ''}`
+  const regularGrades: Array<[string, SubjectEntry]> = result ? Object.entries(result.subjects) : []
+  const caGrades: Array<[string, SubjectEntry]> = result ? Object.entries(result.ca_subjects) : []
+  const resultText = result?.result_status
+    || (result?.gpa != null ? `GPA=${result.gpa.toFixed(2)}` : 'Passed')
+
+  return (
+    <div className="container-fluid">
+      <BoardHeader />
+      <div id="page-wrapper">
+        <div className="row">
+          <div className="col-md-12">
+            <div className="page-header text-center" id="page-header">
+              <h3>Result of {examHeader}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="row buttons" id="buttons_up">
+            <div className="text-center">
+              <div className="btn-group">
+                <Link href="/" className="btn btn-success search-button" id="search" title="Click here to search another result">
+                  Search Again
+                </Link>
+                <PrintButton />
+              </div>
+            </div>
+          </div>
+          <br />
+          <div className="col-md-12">
+            <div id="result_display">
+              {notFound ? (
+                <div className="alert alert-danger text-center" role="alert">
+                  Result not found. Please check your credentials.
+                </div>
+              ) : result && (
+                <div className="table-container">
+                  {/* Student Information Summary */}
+                  <table className="table-striped">
+                    <thead>
+                      <tr><th colSpan={4}>Student Information Summary</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Roll No</td><td>{result.roll_number}</td>
+                        <td>Registration No</td><td>{result.registration_no || '[NOT SHOWN]'}</td>
+                      </tr>
+                      <tr><td>Name of Student</td><td colSpan={3}>{result.student_name}</td></tr>
+                      {result.father_name && (
+                        <tr><td>Father&apos;s Name</td><td colSpan={3}>{result.father_name}</td></tr>
+                      )}
+                      {result.mother_name && (
+                        <tr><td>Mother&apos;s Name</td><td colSpan={3}>{result.mother_name}</td></tr>
+                      )}
+                      <tr>
+                        <td>Board</td><td>{boardName}</td>
+                        <td>Session</td><td>{result.session || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td>{result.board === 'tec' ? 'Trade' : 'Group'}</td>
+                        <td>{result.group_name?.toUpperCase() || 'N/A'}</td>
+                        <td>Type: {result.student_type?.toUpperCase() || 'REGULAR'}</td>
+                        <td>Gender: {result.gender || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td>Result</td><td>{resultText}</td>
+                        <td>Date of Birth</td><td>{result.date_of_birth || 'N/A'}</td>
+                      </tr>
+                      <tr>
+                        <td>Name of Institute</td>
+                        <td colSpan={3}><span id="i_name">{result.institute_name || ''}</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div className="alert alert-info text-center" id="err_msg" style={{ display: 'none' }}></div>
+
+                  {/* Subject-wise Grade/Marks */}
+                  {regularGrades.length > 0 && (
+                    <>
+                      <div className="text-center"><h4>Subject-wise Grade/Marks</h4></div>
+                      <table className="table-striped">
+                        <thead>
+                          <tr><th>Subject Code</th><th>Subject Name</th><th>Grade</th></tr>
+                        </thead>
+                        <tbody>
+                          {regularGrades.map(([code, v]) => (
+                            <tr key={code}>
+                              <td className="cent-align">{code}</td>
+                              <td><span className={`code_${code}`}>{v.name.toUpperCase()}</span></td>
+                              <td className="cent-align">{v.grade}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="divpadding"></div>
+                    </>
+                  )}
+
+                  {/* Continuous Assessment */}
+                  {caGrades.length > 0 && (
+                    <>
+                      <div className="text-center"><h4>Subject-wise Grade/Marks for Continuous Assessment</h4></div>
+                      <table className="table-striped">
+                        <thead>
+                          <tr><th>Subject Code</th><th>Subject Name</th><th>Grade</th></tr>
+                        </thead>
+                        <tbody>
+                          {caGrades.map(([code, v]) => (
+                            <tr key={code}>
+                              <td className="cent-align">{code}</td>
+                              <td><span className={`code_${code}`}>{v.name.toUpperCase()}</span></td>
+                              <td className="cent-align">{v.grade}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="divpadding"></div>
+                    </>
+                  )}
+
+                  {/* Remarks */}
+                  {result.remarks && (
+                    <div className="alert alert-info text-center" role="alert">
+                      {result.remarks}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="row buttons" id="buttons_down"><br /></div>
+          <br />
+        </div>
+      </div>
       <div id="dev_info">
         <p>Powered by <i>Inter-Education Board Coordination Committee</i></p>
         <p>Result Information Maintenance and Update: <i>Respective Board</i></p>
         <p>© All rights reserved</p>
       </div>
     </div>
-  );
+  )
 }
 ```
 
-- [ ] **Step 3: Commit**
+Key differences from the original:
+- **Lookup** — calls `searchStudent(roll, board, exam, year, reg)` (rewritten signature from Task 3b) and gets back a flat `Result` (or `null`).
+- **Grades** — iterates `Object.entries(result.subjects)` / `Object.entries(result.ca_subjects)` instead of filtering a `student.grades[]` relation.
+- **Board name** — resolves `result.board` (code) to a display name via `getEducationBoards()`.
+- **Result/GPA** — reads from `result.result_status` or falls back to `result.gpa`.
+- **Remarks** — `result.remarks` is a single text field (not an array).
+
+- [ ] **Step 2: Commit**
 
 ```bash
 cd /d/SSC
-git add ssc-result-system/src/app/\(public\)/
-git commit -m "feat(portal): student search page replicating reference UI"
+git add ssc-result-system/src/app/result/page.tsx
+git commit -m "feat(portal): adapt result sheet to new flat results schema"
 ```
 
 ---
 
-### Task 14: Student portal — result sheet
-
-**Files:**
-- Create: `ssc-result-system/src/app/(public)/result/page.tsx`
-
-**Interfaces:**
-- Consumes: reads `sessionStorage['lastResult']` (set by the search page); renders `Result`. If absent, prompts to go back and search.
-- Produces: a faithful replica of `WEB BASED RESULT PUBLICATION SYSTEM…html`.
-
-- [ ] **Step 1: Write `result/page.tsx`**
-
-```tsx
-'use client';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import type { Result } from '@/lib/types';
-
-export default function ResultPage() {
-  const [r, setR] = useState<Result | null>(null);
-
-  useEffect(() => {
-    const raw = typeof window !== 'undefined' ? sessionStorage.getItem('lastResult') : null;
-    if (raw) { try { setR(JSON.parse(raw)); } catch { /* ignore */ } }
-  }, []);
-
-  if (!r) {
-    return (
-      <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center' }}>
-        <p>No result loaded. Please search first.</p>
-        <Link className="btn btn-success" href="/">Go to Search</Link>
-      </div>
-    );
-  }
-
-  const subs = Object.entries(r.subjects);
-  const caSubs = Object.entries(r.ca_subjects);
-
-  return (
-    <div className="container-fluid">
-      <div id="page-wrapper">
-        <div className="page-header">
-          <h3>Result of {examLabel(r.exam)} Examination - {r.exam_year}</h3>
-        </div>
-
-        <Buttons />
-
-        <div className="table-container">
-          <table className="table-striped">
-            <thead><tr><th colSpan={4}>Student Information Summary</th></tr></thead>
-            <tbody>
-              <tr><td>Roll No</td><td>{r.roll_number}</td><td>Registration No</td><td>{r.registration_no}</td></tr>
-              <tr><td>Name of Student</td><td colSpan={3}>{r.student_name}</td></tr>
-              {r.father_name && <tr><td>Father&apos;s Name</td><td colSpan={3}>{r.father_name}</td></tr>}
-              {r.mother_name && <tr><td>Mother&apos;s Name</td><td colSpan={3}>{r.mother_name}</td></tr>}
-              <tr><td>Board</td><td>{r.board.toUpperCase()}</td><td>Session</td><td>{r.session || 'N/A'}</td></tr>
-              <tr>
-                <td>Group</td><td>{r.group_name || 'N/A'}</td>
-                <td>Type: {r.student_type || 'N/A'}</td><td>Gender: {r.gender || 'N/A'}</td>
-              </tr>
-              <tr>
-                <td>Result</td><td>{r.result_status || (r.gpa != null ? `GPA=${r.gpa.toFixed(2)}` : 'N/A')}</td>
-                <td>Date of Birth</td><td>{r.date_of_birth || 'N/A'}</td>
-              </tr>
-              <tr><td>Name of Institute</td><td colSpan={3}>{r.institute_name || 'N/A'}</td></tr>
-            </tbody>
-          </table>
-
-          <div style={{ height: 10 }} />
-
-          <div style={{ textAlign: 'center' }}><h4>Subject-wise Grade/Marks</h4></div>
-          <table className="table-striped">
-            <thead><tr><th>Subject Code</th><th>Subject Name</th><th>Grade</th></tr></thead>
-            <tbody>
-              {subs.map(([code, v]) => (
-                <tr key={code}>
-                  <td className="cent-align">{code}</td>
-                  <td>{v.name}</td>
-                  <td className="cent-align">{v.grade}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {caSubs.length > 0 && (
-            <>
-              <div className="divpadding" />
-              <div style={{ textAlign: 'center' }}><h4>Subject-wise Grade/Marks for Continuous Assessment</h4></div>
-              <table className="table-striped">
-                <thead><tr><th>Subject Code</th><th>Subject Name</th><th>Grade</th></tr></thead>
-                <tbody>
-                  {caSubs.map(([code, v]) => (
-                    <tr key={code}>
-                      <td className="cent-align">{code}</td>
-                      <td>{v.name}</td>
-                      <td className="cent-align">{v.grade}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-
-          {r.remarks && (
-            <>
-              <div className="divpadding" />
-              <div className="alert alert-info" style={{ textAlign: 'center' }}>
-                <strong>Remarks:</strong> {r.remarks}
-              </div>
-            </>
-          )}
-        </div>
-
-        <Buttons />
-      </div>
-
-      <style jsx>{`
-        .table-container { width: 100%; overflow-x: auto; }
-        .table-striped {
-          width: 90%; margin: auto; border-collapse: collapse;
-          box-shadow: 0 0 20px rgba(0,0,0,.15);
-        }
-        .table-striped thead tr { background-color: #14A44D; color: #fff; text-align: left; }
-        .table-striped th, .table-striped td { padding: 12px 15px; }
-        .table-striped tbody tr { border-bottom: 1px solid #ddd; }
-        .table-striped tbody tr:nth-of-type(even) { background-color: #f3f3f3; }
-        .table-striped tbody tr:last-of-type { border-bottom: 2px solid #009879; }
-        .cent-align { text-align: center; }
-        .divpadding { padding: 10px 0; }
-        @media print {
-          .btn, .no-print { display: none !important; }
-          .table-striped { width: 100% !important; box-shadow: none !important; }
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function Buttons() {
-  return (
-    <div className="no-print" style={{ textAlign: 'center', margin: '10px 0' }}>
-      <Link className="btn btn-success" href="/">Search Again</Link>{' '}
-      <button className="btn btn-info" onClick={() => window.print()}>Print</button>
-    </div>
-  );
-}
-
-function examLabel(code: string): string {
-  switch (code) {
-    case 'jsc': return 'JSC or Equivalent';
-    case 'ssc': return 'SSC or Equivalent';
-    case 'hsc': return 'HSC or Equivalent';
-    case 'dibs': return 'DIBS';
-    default: return code.toUpperCase();
-  }
-}
-```
-
-- [ ] **Step 2: Manual end-to-end test**
-
-Prerequisites: `.env.local` filled with real Supabase keys, migration applied, and at least one result created via `/admin`.
-
-```bash
-cd /d/SSC/ssc-result-system && npm run dev
-```
-1. Open `http://localhost:3001/`.
-2. Select Board = Dhaka, Exam = SSC, Year, Type = Individual, enter the Roll + Registration you created.
-3. Click "View Result" → result sheet renders matching the reference layout (green header rows, striped tables, "Search Again"/"Print" buttons).
-4. Click "Print" → browser print preview shows tables only (buttons hidden).
-5. Try a wrong Roll → inline alert "No result found for the given credentials."
-
-- [ ] **Step 3: Commit**
-
-```bash
-cd /d/SSC
-git add ssc-result-system/src/app/\(public\)/result/
-git commit -m "feat(portal): result sheet replicating reference layout"
-```
-
----
 
 ### Task 15: README and final wiring
 
@@ -1927,19 +2176,29 @@ git commit -m "docs: README with setup and architecture summary"
 
 ## Self-Review
 
+**0. Revision note** — this plan was revised after discovering a pre-existing, near-faithful Student Portal in `src/`. Tasks 1, 3, 3b, 13, 14 now adapt existing files rather than create new ones. The admin/auth/schema/API tasks (2, 4, 5, 6, 7, 8, 9, 10, 11, 12) stand largely as originally written. Per the user: the "Institution Result" dropdown option is **kept** (non-functional, with "not available" message), and the **CAPTCHA is removed** from the search form.
+
 **1. Spec coverage** — checked each spec section against tasks:
-- §3 Architecture/routing → Task 1 (scaffold), Task 6 (layouts), Tasks 8/11 (admin shell + guard).
+- §3 Architecture/routing → Task 1 (config, keep portal), Task 6 (verify root layout), Tasks 8/11 (admin shell + guard).
 - §4 Schema → Task 2 (full SQL incl. RLS, seed, index, UNIQUE).
 - §5 Auth → Task 4 (helpers, unit-tested), Task 7 (middleware), Task 8 (login/logout).
 - §6 API → Task 9 (GET lookup/list), Task 10 (POST/PATCH/DELETE).
-- §7 Student portal → Task 13 (search), Task 14 (result sheet) — both port reference CSS.
+- §7 Student portal → **Task 13 (adapt search form: strip CAPTCHA, align types)** + **Task 14 (adapt result sheet to flat schema)**. Portal CSS/Bootstrap/logo kept as-is. Data layer rewritten in Task 3b.
 - §8 Admin dashboard → Tasks 11 + 12 (shell, dynamic subject rows, list, edit, delete).
 - §9 Env vars → Task 1 `.env.example`, README in Task 15.
 - §10 Setup → README Task 15.
-- §11 Out of scope → omitted intentionally (no Institution result, no CAPTCHA, no PDF, no bulk import, no multi-admin).
+- §11 Out of scope → Institution data branch (UI kept, no data), CAPTCHA removed, no PDF, no bulk import, no multi-admin.
 
 **2. Placeholder scan** — no TBD/TODO; all code blocks are complete. Two intentional blanks are real developer inputs: `.env.local` Supabase keys (filled by developer per README) and the AUTH_SECRET hex (generated via the documented command).
 
-**3. Type consistency** — `Result` and `ResultInput` defined in Task 3 are reused in Tasks 9, 10, 12, 14 with matching field names (`subjects`, `ca_subjects`, `roll_number`, `registration_no`, etc.). `SubjectMap = Record<string, {name, grade}>` matches what `sanitizeSubjects` returns and what the admin `pack()` builds and the result page iterates. `GRADES` exported from Task 3's `grades.ts` is imported in Tasks 10 and 12 with the same constant name. `SESSION_COOKIE` / `signSession` / `verifySession` / `isPasswordCorrect` / `sessionTtl` names are identical across Tasks 4, 7, 8, 9, 10.
+**3. Type consistency** — `Result` and `ResultInput` defined in Task 3 are reused in Tasks 3b, 9, 10, 12, 13, 14 with matching field names (`subjects`, `ca_subjects`, `roll_number`, `registration_no`, etc.). `SubjectMap = Record<string, {name, grade}>` matches what `sanitizeSubjects` returns (Task 10), what the admin `pack()` builds (Task 12), what `Object.entries(result.subjects)` iterates (Task 14), and what `Result.subjects` is typed as (Task 3). `Board`/`Exam` types (Task 3) match the rewritten `data.ts` return types (Task 3b) and the `StudentSearchForm` props (Task 13). `GRADES` is imported in Tasks 10 and 12 with the same constant name. `SESSION_COOKIE` / `signSession` / `verifySession` / `isPasswordCorrect` / `sessionTtl` names are identical across Tasks 4, 7, 8, 9, 10.
 
-**One open risk** (flagged in Task 7 Step 2): the edge-runtime compatibility of Node `crypto.createHmac` in `middleware.ts`. If the build errors, the fallback is to rewrite `verifySession` against the Web Crypto API (`crypto.subtle.importKey` + `sign('HMAC', …)`). This is the single most likely build-time surprise and is called out where it would surface.
+**4. Cross-file type flow (critical, since the portal is kept):**
+- `lib/types.ts` (Task 3) exports `Board`, `Exam`, `Result`, `ResultInput`, `SubjectEntry`, `SubjectMap`.
+- `lib/data.ts` (Task 3b) imports those, returns `Board[]` / `Exam[]` / `{year}[]` / `Result|null` — matches what `app/page.tsx` (unchanged) passes to `StudentSearchForm` and what `app/result/page.tsx` (Task 14) consumes.
+- `StudentSearchForm.tsx` (Task 13) imports `Board`, `Exam` and accepts `{year:number}[]` — matches.
+- Admin `page.tsx` (Task 12) imports `GRADES` from `lib/grades` and `Result` from `lib/types` — matches.
+
+**Open risks:**
+1. **Edge-runtime crypto** (Task 7 Step 2): if `crypto.createHmac` is unavailable in middleware, rewrite `verifySession` against Web Crypto (`crypto.subtle`). Flagged where it surfaces.
+2. **Supabase factory name** (Task 3b Step 1): assumes `lib/supabase-server.ts` exports `createServerClient()`. Step 1 verifies and adapts if named differently. Note `data.ts` only reads, so anon-key is acceptable there; service role is used only by API routes (Tasks 9–10).
