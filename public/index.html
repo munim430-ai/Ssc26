@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firecrawl Website Cloner & Interactive Preview Studio</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar / Library -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">
+          <span class="fire-icon">🔥</span>
+          <span class="brand-text">Firecrawl<span class="accent">Clone</span></span>
+        </div>
+        <span class="api-badge" title="API Key Verified"><span class="pulse"></span> API Ready</span>
+      </div>
+
+      <div class="sidebar-header">
+        <h2>Cloned Sites</h2>
+        <span class="clone-count" id="cloneCount">0</span>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="librarySearch" placeholder="Search cloned sites...">
+      </div>
+
+      <div class="library-list" id="libraryList">
+        <div class="empty-state">
+          <p>No cloned sites yet.</p>
+          <small>Enter a URL to clone your first site.</small>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="key-info">
+          <span class="key-label">Key:</span>
+          <code class="key-value">fc-eb73...054</code>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-content">
+      <!-- Top Control Bar -->
+      <header class="control-bar">
+        <form id="cloneForm" class="clone-form">
+          <div class="url-input-container">
+            <span class="url-icon">🌐</span>
+            <input type="url" id="targetUrl" placeholder="https://example.com or enter any target URL..." required autocomplete="off">
+            
+            <div class="mode-selector">
+              <label class="radio-label">
+                <input type="radio" name="mode" value="single" checked>
+                <span>Single Page</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="mode" value="crawl">
+                <span>Full Crawl</span>
+              </label>
+            </div>
+
+            <div class="crawl-limit-container" id="limitContainer" style="display: none;">
+              <span class="limit-label">Pages:</span>
+              <select id="crawlLimit">
+                <option value="3">3 pages</option>
+                <option value="5" selected>5 pages</option>
+                <option value="10">10 pages</option>
+                <option value="20">20 pages</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="cloneBtn">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">Clone Website</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="quick-demos">
+          <span class="demo-label">Quick Try:</span>
+          <button class="demo-chip" data-url="https://example.com">example.com</button>
+          <button class="demo-chip" data-url="https://news.ycombinator.com">hackernews</button>
+          <button class="demo-chip" data-url="https://wikipedia.org">wikipedia</button>
+        </div>
+      </header>
+
+      <!-- Status & Progress Console -->
+      <div class="status-console" id="statusConsole" style="display: none;">
+        <div class="status-header">
+          <div class="status-title">
+            <span class="spinner" id="statusSpinner"></span>
+            <span id="statusMessage">Initiating Firecrawl scraping request...</span>
+          </div>
+          <span class="timer" id="statusTimer">00:00</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="log-stream" id="logStream"></div>
+      </div>
+
+      <!-- Preview Studio Container -->
+      <div class="studio-container" id="studioContainer">
+        <!-- Empty State -->
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="hero-card">
+            <div class="hero-icon">🚀</div>
+            <h1>Clone Any Website in Seconds</h1>
+            <p>Powered by Firecrawl AI API. Enter any web address above to extract styled HTML, clean Markdown, full-page screenshots, and metadata into a local interactive clone.</p>
+            <div class="hero-features">
+              <div class="feature-item">
+                <span class="feat-icon">📄</span>
+                <strong>Full HTML & CSS Mirror</strong>
+                <p>Generates self-contained local web pages for offline preview.</p>
+              </div>
+              <div class="feature-item">
+                <span class="feat-icon">📝</span>
+                <strong>Clean Markdown Extract</strong>
+                <p>Perfect for LLM training, prompts, and content analysis.</p>
+              </div>
+              <div class="feature-item">
+                <span class="feat-icon">📸</span>
+                <strong>Page Screenshots</strong>
+                <p>High-resolution captures of the target website layout.</p>
+              </div>
+              <div class="feature-item">
+                <span class="feat-icon">📦</span>
+                <strong>ZIP Export</strong>
+                <p>Download complete site archives with a single click.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Studio Viewer (When site selected) -->
+        <div class="studio-viewer" id="studioViewer" style="display: none;">
+          <!-- Workspace Toolbar -->
+          <div class="studio-toolbar">
+            <div class="target-info">
+              <h2 id="viewTitle">Website Title</h2>
+              <span class="target-url-link" id="viewUrl">https://example.com</span>
+            </div>
+
+            <!-- View Tabs -->
+            <div class="view-tabs">
+              <button class="tab-btn active" data-tab="preview">🌐 Live Preview</button>
+              <button class="tab-btn" data-tab="markdown">📝 Markdown</button>
+              <button class="tab-btn" data-tab="html">💻 Source HTML</button>
+              <button class="tab-btn" data-tab="screenshot">📸 Screenshot</button>
+              <button class="tab-btn" data-tab="metadata">📊 Metadata</button>
+            </div>
+
+            <!-- Device Controls / Actions -->
+            <div class="toolbar-actions">
+              <div class="device-controls" id="deviceControls">
+                <button class="device-btn active" data-device="desktop" title="Desktop View">💻</button>
+                <button class="device-btn" data-device="tablet" title="Tablet View">📱</button>
+                <button class="device-btn" data-device="mobile" title="Mobile View">📲</button>
+              </div>
+              
+              <a href="#" target="_blank" class="btn btn-secondary" id="openExternalBtn" title="Open in new window">
+                <span>↗️ Open</span>
+              </a>
+              <button class="btn btn-primary" id="downloadZipBtn">
+                <span>📦 Export ZIP</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab Content Views -->
+          <div class="studio-body">
+            <!-- 1. Live Preview Iframe -->
+            <div class="tab-pane active" id="pane-preview">
+              <div class="iframe-wrapper desktop" id="iframeWrapper">
+                <iframe id="previewIframe" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
+              </div>
+            </div>
+
+            <!-- 2. Markdown View -->
+            <div class="tab-pane" id="pane-markdown">
+              <div class="code-view-header">
+                <span>content.md</span>
+                <button class="btn-copy" id="copyMdBtn">Copy Markdown</button>
+              </div>
+              <pre class="code-block"><code id="markdownContent">Loading markdown...</code></pre>
+            </div>
+
+            <!-- 3. Source HTML -->
+            <div class="tab-pane" id="pane-html">
+              <div class="code-view-header">
+                <span>index.html</span>
+                <button class="btn-copy" id="copyHtmlBtn">Copy HTML</button>
+              </div>
+              <pre class="code-block"><code id="htmlContent">Loading HTML source...</code></pre>
+            </div>
+
+            <!-- 4. Screenshot -->
+            <div class="tab-pane" id="pane-screenshot">
+              <div class="screenshot-container" id="screenshotContainer">
+                <img id="screenshotImg" src="" alt="Page Screenshot">
+              </div>
+            </div>
+
+            <!-- 5. Metadata -->
+            <div class="tab-pane" id="pane-metadata">
+              <pre class="code-block"><code id="metadataContent">Loading metadata...</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
