@@ -31,41 +31,25 @@ export default function StudentSearchForm({ boards, exams, years }: Props) {
     setErrorMsg('')
 
     if (!board || !exam || !year || !resultType) {
-      setErrorMsg('Please choose Exam, Year, Board first.')
+      setErrorMsg('Please choose Board, Exam, Year, and Result Type first.')
       return
     }
 
-    setLoading(true)
-    try {
-      if (showIndividual) {
-        if (!roll) {
-          setErrorMsg('Please enter Roll Number.')
-          setLoading(false)
-          return
-        }
-        const params = new URLSearchParams({ board, exam, year, roll })
-        if (reg) params.set('reg', reg)
-        // Verify the result exists before navigating; the result page re-reads it.
-        const res = await fetch(`/api/results?${params.toString()}`)
-        const data = await res.json().catch(() => ({}))
-        if (!res.ok || data.status !== 0) {
-          setErrorMsg(data.error || 'Result not found. Please check your credentials.')
-          setLoading(false)
-          return
-        }
-        router.push(`/result?${params.toString()}`)
-      } else if (showInstitution) {
-        if (!eiin) {
-          setErrorMsg('Please enter EIIN Number of Institution.')
-          setLoading(false)
-          return
-        }
-        setErrorMsg('Institution result search is not available in this system.')
-        setLoading(false)
+    if (showIndividual) {
+      if (!roll) {
+        setErrorMsg('Please enter Roll Number.')
+        return
       }
-    } catch {
-      setErrorMsg('An error occurred. Please try again.')
-      setLoading(false)
+      setLoading(true)
+      const params = new URLSearchParams({ board, exam, year, roll })
+      if (reg) params.set('reg', reg)
+      router.push(`/result?${params.toString()}`)
+    } else if (showInstitution) {
+      if (!eiin) {
+        setErrorMsg('Please enter EIIN Number of Institution.')
+        return
+      }
+      setErrorMsg('Institution result search is not available in this system.')
     }
   }
 
@@ -135,7 +119,7 @@ export default function StudentSearchForm({ boards, exams, years }: Props) {
                 </div>
               </div>
 
-              {/* Roll Number (Individual only) */}
+              {/* Roll Number of Examinee */}
               <div className="row" id="col_5">
                 <div id="row_roll" style={{ display: showIndividual ? '' : 'none' }}>
                   <div className="form-group col-md-5"><label htmlFor="roll">Roll Number of Examinee</label></div>
@@ -147,7 +131,7 @@ export default function StudentSearchForm({ boards, exams, years }: Props) {
                 </div>
               </div>
 
-              {/* Registration Number (Individual only) */}
+              {/* Registration Number of Examinee */}
               <div className="row" id="col_6">
                 <div id="row_reg" style={{ display: showIndividual ? '' : 'none' }}>
                   <div className="form-group col-md-5"><label htmlFor="reg">Registration Number of Examinee</label></div>
@@ -158,7 +142,7 @@ export default function StudentSearchForm({ boards, exams, years }: Props) {
                 </div>
               </div>
 
-              {/* EIIN Number (Institution only — non-functional in v1, kept for fidelity) */}
+              {/* EIIN Number */}
               <div className="row" id="col_7">
                 <div id="row_eiin" style={{ display: showInstitution ? '' : 'none' }}>
                   <div className="form-group col-md-5">
@@ -175,15 +159,13 @@ export default function StudentSearchForm({ boards, exams, years }: Props) {
                 </div>
               </div>
 
-              {/* CAPTCHA removed per spec §11 */}
-
               {/* Submit */}
               <div className="row" id="col_11">
                 <div id="row_submit" style={{ display: showActionFields ? '' : 'none' }}>
                   <div className="form-group"><label htmlFor="submit"></label></div>
                   <div className="form-group">
                     <input className="btn btn-success center-block" type="submit" name="submit" id="submit"
-                      value={loading ? 'Loading...' : 'View Result'} disabled={loading} />
+                      value={loading ? 'Loading...' : 'See Results'} disabled={loading} />
                   </div>
                 </div>
               </div>

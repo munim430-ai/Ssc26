@@ -86,8 +86,8 @@ export default async function ResultPage({ searchParams }: Props) {
           <div className="col-md-12">
             <div id="result_display">
               {notFound ? (
-                <div className="alert alert-danger text-center" role="alert">
-                  Result not found. Please check your credentials.
+                <div className="alert alert-danger text-center" role="alert" style={{ fontSize: '20px', fontWeight: 'bold', padding: '24px', margin: '20px 0' }}>
+                  ( NO REVIEW FOUND)
                 </div>
               ) : result && (
                 <div className="table-container">
@@ -178,12 +178,17 @@ export default async function ResultPage({ searchParams }: Props) {
                     </>
                   )}
 
-                  {/* Remarks (custom field — not in original reference) */}
+                  {/* Remarks */}
                   {result.remarks && (
                     <div className="alert alert-info text-center" role="alert">
                       {result.remarks}
                     </div>
                   )}
+
+                  {/* Under Review Notice */}
+                  <div style={{ color: 'red', fontWeight: 'bold', fontSize: '22px', textAlign: 'center', marginTop: '30px', marginBottom: '20px', letterSpacing: '1px' }}>
+                    ( UNDER REVIEW)
+                  </div>
                 </div>
               )}
             </div>
