@@ -250,7 +250,9 @@ SUPABASE_SERVICE_ROLE_KEY=
 1. Create a Supabase project → copy URL, anon key, service role key.
 2. Run `supabase/migrations/001_schema.sql` in the Supabase SQL editor (tables + seed + RLS).
 3. Fill `.env.local`.
-4. `npm install && npm run dev` → `http://localhost:3000` (portal), `http://localhost:3000/admin` (dashboard, password-gated).
+4. `npm install && npm run dev` → `http://localhost:3001` (portal), `http://localhost:3001/admin` (dashboard, password-gated).
+
+> **Port note:** the `dev` script runs `next dev -p 3001` because port 3000 is already occupied in this repo by the unrelated `firecrawl-website-cloner` Express server (`D:\SSC\server.mjs`, PID at runtime varies). The two apps coexist without conflict.
 
 ## 11. Out of Scope (v1)
 
