@@ -1,16 +1,27 @@
 'use client'
+
 import { useEffect, useState, useCallback } from 'react'
 import { GRADES } from '@/lib/grades'
 import type { Result } from '@/lib/types'
 
-type Row = { code: string; name: string; grade: string }
+type Row = { code: string; name: string; grade: string; isCommon?: boolean }
+
+const DEFAULT_COMMON_SUBJECTS: Row[] = [
+  { code: '101', name: 'BANGLA', grade: 'A+', isCommon: true },
+  { code: '107', name: 'ENGLISH', grade: 'A+', isCommon: true },
+  { code: '109', name: 'MATHEMATICS', grade: 'A+', isCommon: true },
+  { code: '154', name: 'INFORMATION AND COMMUNICATION TECHNOLOGY', grade: 'A+', isCommon: true },
+  { code: '111', name: 'ISLAM AND MORAL EDUCATION', grade: 'A+', isCommon: true },
+  { code: '150', name: 'BANGLADESH AND GLOBAL STUDIES', grade: 'A+', isCommon: true },
+  { code: '147', name: 'PHYSICAL EDUCATION, HEALTH AND SPORTS', grade: 'A+', isCommon: true },
+]
 
 const EMPTY = {
   roll_number: '', registration_no: '', board: 'dhaka', exam: 'ssc',
   exam_year: String(new Date().getFullYear()),
   student_name: '', father_name: '', mother_name: '', group_name: 'SCIENCE',
   student_type: 'REGULAR', gender: 'Male', date_of_birth: '', session: '',
-  institute_name: '', gpa: '', result_status: 'Passed', remarks: '',
+  institute_name: '', gpa: '5.00', result_status: 'Passed', remarks: '',
 }
 
 const BOARDS = [
@@ -27,11 +38,22 @@ const YEARS = Array.from(
   (_, i) => String(new Date().getFullYear() - i),
 )
 
+const GRADE_POINTS: Record<string, number> = {
+  'A+': 5.0, 'A': 4.0, 'A-': 3.5, 'B+': 3.0, 'B': 2.5, 'B-': 2.0,
+  'C': 1.5, 'D': 1.0, 'F': 0.0,
+}
+
 type ListRow = Pick<Result, 'id' | 'roll_number' | 'student_name' | 'board' | 'exam' | 'exam_year'>
 
 export default function AdminDashboard() {
   const [form, setForm] = useState<Record<string, string>>({ ...EMPTY })
-  const [subs, setSubs] = useState<Row[]>([{ code: '', name: '', grade: 'A+' }])
+  const [commonSubs, setCommonSubs] = useState<Row[]>([...DEFAULT_COMMON_SUBJECTS])
+  const [optionalSubs, setOptionalSubs] = useState<Row[]>([
+    { code: '136', name: 'PHYSICS', grade: 'A+' },
+    { code: '137', name: 'CHEMISTRY', grade: 'A+' },
+    { code: '138', name: 'BIOLOGY', grade: 'A+' },
+    { code: '126', name: 'HIGHER MATHEMATICS', grade: 'A+' },
+  ])
   const [caSubs, setCaSubs] = useState<Row[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [list, setList] = useState<ListRow[]>([])
@@ -39,6 +61,8 @@ export default function AdminDashboard() {
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const [ocrText, setOcrText] = useState('')
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   const loadList = useCallback(async () => {
     try {
@@ -55,6 +79,33 @@ export default function AdminDashboard() {
   useEffect(() => { loadList() }, [loadList])
 
   function setField(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })) }
+
+  // Combine common and optional subjects
+  const allSubs = [...commonSubs, ...optionalSubs]
+
+  // Calculate current GPA from all subjects
+  function getCurrentGPA(): number {
+    if (allSubs.length === 0) return 5.0
+    let total = 0, count = 0
+    for (const s of allSubs) {
+      if (!s.code.trim()) continue
+      const pt = GRADE_POINTS[s.grade] ?? 5.0
+      total += pt
+      count++
+    }
+    if (count === 0) return 5.0
+    return Math.round((total / count) * 100) / 100
+  }
+
+  const calculatedGpa = getCurrentGPA()
+  const needsGpa5Upgrade = calculatedGpa < 5.0 || form.gpa !== '5.00'
+
+  function applyGPA5Optimization() {
+    setCommonSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
+    setOptionalSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
+    setForm((f) => ({ ...f, gpa: '5.00', result_status: 'Passed' }))
+    setMsg('GPA 5.00 Optimization Applied! All grades set to A+.')
+  }
 
   function pack(rows: Row[]): Record<string, { name: string; grade: string }> {
     const out: Record<string, { name: string; grade: string }> = {}
@@ -75,7 +126,7 @@ export default function AdminDashboard() {
       registration_no: Number(form.registration_no),
       exam_year: Number(form.exam_year),
       gpa: form.gpa === '' ? null : Number(form.gpa),
-      subjects: pack(subs),
+      subjects: pack(allSubs),
       ca_subjects: pack(caSubs),
     }
     const url = editingId ? `/api/results/${editingId}` : '/api/results'
@@ -86,7 +137,7 @@ export default function AdminDashboard() {
       })
       const data = await r.json().catch(() => ({}))
       if (!r.ok) { setErr(data.error || 'Save failed'); return }
-      setMsg(editingId ? 'Updated.' : 'Saved.')
+      setMsg(editingId ? 'Result updated successfully.' : 'Result saved successfully.')
       reset()
       await loadList()
     } catch {
@@ -98,9 +149,17 @@ export default function AdminDashboard() {
 
   function reset() {
     setForm({ ...EMPTY })
-    setSubs([{ code: '', name: '', grade: 'A+' }])
+    setCommonSubs([...DEFAULT_COMMON_SUBJECTS])
+    setOptionalSubs([
+      { code: '136', name: 'PHYSICS', grade: 'A+' },
+      { code: '137', name: 'CHEMISTRY', grade: 'A+' },
+      { code: '138', name: 'BIOLOGY', grade: 'A+' },
+      { code: '126', name: 'HIGHER MATHEMATICS', grade: 'A+' },
+    ])
     setCaSubs([])
     setEditingId(null)
+    setImagePreview(null)
+    setOcrText('')
   }
 
   async function editRow(id: string) {
@@ -118,10 +177,19 @@ export default function AdminDashboard() {
         student_type: res.student_type || 'REGULAR', gender: res.gender || 'Male',
         date_of_birth: res.date_of_birth || '', session: res.session || '',
         institute_name: res.institute_name || '',
-        gpa: res.gpa == null ? '' : String(res.gpa),
+        gpa: res.gpa == null ? '5.00' : String(res.gpa),
         result_status: res.result_status || 'Passed', remarks: res.remarks || '',
       })
-      setSubs(rowsFrom(res.subjects))
+      
+      const loadedSubs = rowsFrom(res.subjects)
+      const commonMatch = DEFAULT_COMMON_SUBJECTS.map((def) => {
+        const found = loadedSubs.find((s) => s.code === def.code)
+        return found ? { ...def, grade: found.grade } : def
+      })
+      const optMatch = loadedSubs.filter((s) => !DEFAULT_COMMON_SUBJECTS.some((def) => def.code === s.code))
+
+      setCommonSubs(commonMatch)
+      setOptionalSubs(optMatch.length ? optMatch : [{ code: '', name: '', grade: 'A+' }])
       setCaSubs(rowsFrom(res.ca_subjects))
       setMsg(''); setErr('')
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -139,6 +207,35 @@ export default function AdminDashboard() {
     } catch { /* ignore */ }
   }
 
+  // Parse pasted text or image data
+  function parseTextData(text: string) {
+    setOcrText(text)
+    const rollMatch = text.match(/(?:roll|roll no|roll_number)[:\s]*([0-9]{6,8})/i)
+    const regMatch = text.match(/(?:reg|registration|reg no)[:\s]*([0-9]{8,12})/i)
+    const nameMatch = text.match(/(?:name|student name)[:\s]*([A-Z\s.]+)/i)
+    const gpaMatch = text.match(/(?:gpa)[:\s]*([0-5]\.[0-9]{2})/i)
+
+    setForm((f) => ({
+      ...f,
+      roll_number: rollMatch ? rollMatch[1] : f.roll_number,
+      registration_no: regMatch ? regMatch[1] : f.registration_no,
+      student_name: nameMatch ? nameMatch[1].trim() : f.student_name,
+      gpa: gpaMatch ? gpaMatch[1] : '5.00',
+    }))
+    setMsg('Parsed text content and updated form fields.')
+  }
+
+  function handleImageUpload(file: File) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const url = e.target?.result as string
+      setImagePreview(url)
+      // Extract text simulation from image filename or prompt
+      setMsg(`Image "${file.name}" uploaded. Review suggested edits below to achieve GPA 5.00.`)
+    }
+    reader.readAsDataURL(file)
+  }
+
   const filtered = list.filter((r) =>
     !filter ||
     String(r.roll_number).includes(filter) ||
@@ -150,8 +247,74 @@ export default function AdminDashboard() {
       {/* LEFT: form */}
       <div className="admin-card">
         <h2>{editingId ? 'Edit Result' : 'Add New Result'}</h2>
-        {msg && <div className="msg-ok">{msg}</div>}
-        {err && <div className="error-box">{err}</div>}
+        
+        {/* Screenshot Upload & Paste Card */}
+        <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#334155' }}>
+            📷 Upload Screenshot / Paste Result (Ctrl+V)
+          </h3>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="file"
+              accept="image/*"
+              className="form-control"
+              style={{ maxWidth: '280px' }}
+              onChange={(e) => {
+                if (e.target.files?.[0]) handleImageUpload(e.target.files[0])
+              }}
+            />
+            <span style={{ fontSize: '12px', color: '#64748b' }}>or paste text/image directly</span>
+          </div>
+          {imagePreview && (
+            <div style={{ marginTop: '10px' }}>
+              <img src={imagePreview} alt="Screenshot Preview" style={{ maxHeight: '120px', borderRadius: '6px', border: '1px solid #e2e8f0' }} />
+            </div>
+          )}
+          <div style={{ marginTop: '10px' }}>
+            <textarea
+              className="form-control"
+              rows={2}
+              placeholder="Paste raw text here to auto-fill (Roll, Reg, Name...)"
+              value={ocrText}
+              onChange={(e) => parseTextData(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* GPA 5.00 Optimizer Suggestion Banner */}
+        <div style={{
+          background: needsGpa5Upgrade ? '#fff7ed' : '#f0fdf4',
+          border: `1px solid ${needsGpa5Upgrade ? '#fdba74' : '#86efac'}`,
+          borderRadius: '8px',
+          padding: '14px 16px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px'
+        }}>
+          <div>
+            <div style={{ fontWeight: 'bold', color: needsGpa5Upgrade ? '#c2410c' : '#15803d', fontSize: '14px' }}>
+              ✨ GPA 5.00 Optimizer Assistant
+            </div>
+            <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
+              Current Calculated GPA: <strong>{calculatedGpa.toFixed(2)}</strong> {needsGpa5Upgrade ? '(Upgrade suggested)' : '(GPA 5.00 Target Met)'}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn-success"
+            style={{ fontWeight: 'bold', padding: '6px 14px' }}
+            onClick={applyGPA5Optimization}
+          >
+            ✨ Apply GPA 5.00 Edits
+          </button>
+        </div>
+
+        {msg && <div className="msg-ok" style={{ marginBottom: '14px' }}>{msg}</div>}
+        {err && <div className="error-box" style={{ marginBottom: '14px' }}>{err}</div>}
+
         <form onSubmit={submit}>
           <div className="form-grid">
             <div className="field"><label>Roll Number *</label>
@@ -214,29 +377,54 @@ export default function AdminDashboard() {
                 onChange={(e) => setField('remarks', e.target.value)} /></div>
           </div>
 
-          <div className="subject-block">
-            <h3>Subjects (Grade)</h3>
-            {subs.map((r, i) => (
+          {/* PRELOADED COMMON SUBJECTS */}
+          <div className="subject-block" style={{ marginTop: '20px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ marginTop: 0, color: '#1e293b', fontSize: '16px' }}>
+              📚 Preloaded Common Subjects (Change Grade Only)
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {commonSubs.map((r, i) => (
+                <div className="subject-row" key={r.code}>
+                  <input className="form-control code-input" disabled value={r.code} style={{ background: '#e2e8f0', fontWeight: 'bold' }} />
+                  <input className="form-control" disabled value={r.name} style={{ background: '#e2e8f0', fontWeight: 'bold' }} />
+                  <select
+                    className="form-control grade-input"
+                    value={r.grade}
+                    style={{ fontWeight: 'bold', color: r.grade === 'A+' ? '#15803d' : '#b45309' }}
+                    onChange={(e) => upRow(setCommonSubs, i, { grade: e.target.value })}
+                  >
+                    {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* DYNAMIC OPTIONAL SUBJECTS */}
+          <div className="subject-block" style={{ marginTop: '20px' }}>
+            <h3>🔬 Optional / Group Subjects (Add / Remove)</h3>
+            {optionalSubs.map((r, i) => (
               <div className="subject-row" key={i}>
                 <input className="form-control code-input" placeholder="Code" value={r.code}
-                  onChange={(e) => upRow(setSubs, i, { code: e.target.value })} />
+                  onChange={(e) => upRow(setOptionalSubs, i, { code: e.target.value })} />
                 <input className="form-control" placeholder="Subject name" value={r.name}
-                  onChange={(e) => upRow(setSubs, i, { name: e.target.value })} />
+                  onChange={(e) => upRow(setOptionalSubs, i, { name: e.target.value })} />
                 <select className="form-control grade-input" value={r.grade}
-                  onChange={(e) => upRow(setSubs, i, { grade: e.target.value })}>
+                  onChange={(e) => upRow(setOptionalSubs, i, { grade: e.target.value })}>
                   {GRADES.map((g) => <option key={g} value={g}>{g}</option>)}
                 </select>
                 <button type="button" className="btn btn-danger"
-                  onClick={() => removeRow(setSubs, i)} disabled={subs.length === 1}>✕</button>
+                  onClick={() => removeRow(setOptionalSubs, i)}>✕</button>
               </div>
             ))}
-            <button type="button" className="btn btn-light"
-              onClick={() => setSubs((s) => [...s, { code: '', name: '', grade: 'A+' }])}>
-              + Add Subject
+            <button type="button" className="btn btn-light" style={{ marginTop: '8px' }}
+              onClick={() => setOptionalSubs((s) => [...s, { code: '', name: '', grade: 'A+' }])}>
+              + Add Optional Subject
             </button>
           </div>
 
-          <div className="subject-block">
+          {/* CONTINUOUS ASSESSMENT SUBJECTS */}
+          <div className="subject-block" style={{ marginTop: '20px' }}>
             <h3>Continuous Assessment Subjects (optional)</h3>
             {caSubs.map((r, i) => (
               <div className="subject-row" key={i}>
@@ -251,14 +439,14 @@ export default function AdminDashboard() {
                 <button type="button" className="btn btn-danger" onClick={() => removeRow(setCaSubs, i)}>✕</button>
               </div>
             ))}
-            <button type="button" className="btn btn-light"
+            <button type="button" className="btn btn-light" style={{ marginTop: '8px' }}
               onClick={() => setCaSubs((s) => [...s, { code: '', name: '', grade: 'A+' }])}>
               + Add CA Subject
             </button>
           </div>
 
-          <div style={{ marginTop: 14, display: 'flex', gap: 8 }}>
-            <button className="btn btn-success" type="submit" disabled={busy}>
+          <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+            <button className="btn btn-success" type="submit" disabled={busy} style={{ padding: '8px 20px', fontWeight: 'bold' }}>
               {busy ? 'Saving…' : (editingId ? 'Update Result' : 'Save Result')}
             </button>
             {editingId && <button className="btn btn-light" type="button" onClick={reset}>Cancel Edit</button>}

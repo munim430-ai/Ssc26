@@ -1,0 +1,378 @@
+{
+  "metadata": {
+    "scan_time": "2026-08-11T05:36:56.241161",
+    "target_focus": "SSC 2026 Result Change Scams",
+    "total_posts_analyzed": 6,
+    "stats": {
+      "total_posts": 6,
+      "critical_risk_count": 5,
+      "high_risk_count": 0,
+      "medium_risk_count": 0,
+      "low_risk_count": 0,
+      "scam_percentage": 83.33,
+      "unique_scammer_phones": [
+        "01566778899",
+        "01344556677",
+        "01822334455",
+        "01911223344",
+        "01788990011"
+      ],
+      "unique_telegram_iocs": [
+        "ssc_crypto_fix",
+        "t.me/ssc_board_result_fix",
+        "t.me/dhaka_board_insider",
+        "ssc_result_change_proof"
+      ],
+      "unique_whatsapp_iocs": [
+        "https://chat.whatsapp.com/SSC2026MarksHelp"
+      ]
+    }
+  },
+  "posts": [
+    {
+      "post_id": "fb_scam_1001",
+      "target_scope_group": "SSC 2026 Board Challenge & Rescrutiny Help",
+      "group_id": "ssc_rescrutiny_help",
+      "author_name": "IT_Board_Official_Help",
+      "author_profile_url": "https://facebook.com/it_board_official_help",
+      "post_url": "https://facebook.com/groups/ssc_rescrutiny_help/posts/1001",
+      "timestamp": "2026-08-11T02:15:00Z",
+      "search_keyword_matched": "SSC 2026 result change",
+      "post_content": "🔥 SSC 2026 Result Change & Marks Upgrade Available! 🔥\nযাদের এসএসসি ২০২৬ রেজাল্ট খারাপ হয়েছে বা ফেইল এসছে, চিন্তা করবেন না। আমরা শিক্ষা বোর্ডের আইটি সেকশন (IT section) থেকে সরাসরি ডাটাবেজ আপডেট করে রেজাল্ট পরিবর্তন করে দিচ্ছি।\n✅ GPA 5.00 guaranteed!\n✅ Per subject 2000 taka advance payment.\n✅ Send Money via bKash/Nagad personal: 01788990011\n✅ 100% Live Proof available in inbox.\nযোগাযোগ করুন টেলিগ্রাম এ: t.me/ssc_board_result_fix অথবা WhatsApp: 01788990011",
+      "has_media": true,
+      "media_urls": [
+        "https://m.facebook.com/photo.php?fbid=998811"
+      ],
+      "threat_analysis": {
+        "risk_level": "CRITICAL",
+        "threat_score": 100,
+        "is_scam": true,
+        "heuristics_breakdown": {
+          "monetary_requests": {
+            "detected": true,
+            "matches": [
+              "Send Money",
+              "advance payment",
+              "Per subject",
+              "Nagad",
+              "bKash"
+            ]
+          },
+          "social_engineering": {
+            "detected": true,
+            "matches": [
+              "IT section",
+              "আইটি সেকশন",
+              "GPA 5.00",
+              "রেজাল্ট পরিবর্তন",
+              "SSC 2026 Result Change"
+            ]
+          },
+          "external_diversion": {
+            "detected": true,
+            "matches": [
+              "t.me/ssc_board_result_fix",
+              "WhatsApp: 01788990011",
+              "যোগাযোগ করুন"
+            ]
+          },
+          "visual_fraud": {
+            "detected": true,
+            "matches": [
+              "Image attachment with mark sheet / result claims",
+              "Live Proof",
+              "Proof available",
+              "before after"
+            ]
+          }
+        }
+      },
+      "extracted_iocs": {
+        "phone_numbers": [
+          "01788990011"
+        ],
+        "telegram_handles": [],
+        "telegram_links": [
+          "t.me/ssc_board_result_fix"
+        ],
+        "whatsapp_links": []
+      }
+    },
+    {
+      "post_id": "fb_scam_1002",
+      "target_scope_group": "SSC 2026 Official Student Community",
+      "group_id": "ssc2026_official",
+      "author_name": "Board_Insider_Kazi",
+      "author_profile_url": "https://facebook.com/board_insider_kazi",
+      "post_url": "https://facebook.com/groups/ssc2026_official/posts/1002",
+      "timestamp": "2026-08-11T03:40:00Z",
+      "search_keyword_matched": "SSC board result correction",
+      "post_content": "শিক্ষা বোর্ডের গোপন সার্ভার গ্লিচ (Software glitch) কাজে লাগিয়ে এসএসসি রেজাল্ট সংশোধন করা হচ্ছে। বোর্ড চ্যালেঞ্জ রেজাল্ট প্রকাশের আগেই সরাসরি মার্কস বাড়িয়ে দেওয়া সম্ভব।\nফি: প্রতি বিষয় ১৫০০ টাকা। নগদ (Nagad) অথবা বিকাশ (bKash) 01822334455 নম্বর এ স্যান্ড মানি করতে হবে।\nপ্রমাণ দেখতে ইনবক্স করুন। WhatsApp: https://chat.whatsapp.com/SSC2026MarksHelp",
+      "has_media": true,
+      "media_urls": [
+        "https://m.facebook.com/photo.php?fbid=998822"
+      ],
+      "threat_analysis": {
+        "risk_level": "CRITICAL",
+        "threat_score": 100,
+        "is_scam": true,
+        "heuristics_breakdown": {
+          "monetary_requests": {
+            "detected": true,
+            "matches": [
+              "bKash",
+              "Nagad",
+              "নগদ"
+            ]
+          },
+          "social_engineering": {
+            "detected": true,
+            "matches": [
+              "বোর্ড চ্যালেঞ্জ",
+              "সার্ভার গ্লিচ",
+              "Software glitch",
+              "রেজাল্ট সংশোধন"
+            ]
+          },
+          "external_diversion": {
+            "detected": true,
+            "matches": [
+              "chat.whatsapp.com/SSC2026MarksHelp"
+            ]
+          },
+          "visual_fraud": {
+            "detected": true,
+            "matches": [
+              "Image attachment with mark sheet / result claims"
+            ]
+          }
+        }
+      },
+      "extracted_iocs": {
+        "phone_numbers": [
+          "01822334455"
+        ],
+        "telegram_handles": [],
+        "telegram_links": [],
+        "whatsapp_links": [
+          "https://chat.whatsapp.com/SSC2026MarksHelp"
+        ]
+      }
+    },
+    {
+      "post_id": "fb_scam_1003",
+      "target_scope_group": "SSC Result Change & Mark Sheet Upgrade Proof",
+      "group_id": "ssc_marks_change_proof",
+      "author_name": "Dhaka_Board_Employee_Tanvir",
+      "author_profile_url": "https://facebook.com/dhaka_board_employee_tanvir",
+      "post_url": "https://facebook.com/groups/ssc_marks_change_proof/posts/1003",
+      "timestamp": "2026-08-11T04:10:00Z",
+      "search_keyword_matched": "IT department SSC help",
+      "post_content": "Dhaka Board & Rajshahi Board SSC 2026 Result change service.\nWe have insider access to board chairman IT office. Subject fail to A+ upgrade possible within 24 hours.\nCharge: 3000 BDT half advance via bKash/Rocket 01911223344.\nTelegram link: t.me/dhaka_board_insider\nOnly serious students message inbox.",
+      "has_media": true,
+      "media_urls": [
+        "https://m.facebook.com/photo.php?fbid=998833"
+      ],
+      "threat_analysis": {
+        "risk_level": "CRITICAL",
+        "threat_score": 100,
+        "is_scam": true,
+        "heuristics_breakdown": {
+          "monetary_requests": {
+            "detected": true,
+            "matches": [
+              "Rocket",
+              "bKash",
+              "Charge"
+            ]
+          },
+          "social_engineering": {
+            "detected": true,
+            "matches": [
+              "insider",
+              "SSC 2026 Result change",
+              "board chairman"
+            ]
+          },
+          "external_diversion": {
+            "detected": true,
+            "matches": [
+              "t.me/dhaka_board_insider"
+            ]
+          },
+          "visual_fraud": {
+            "detected": true,
+            "matches": [
+              "Image attachment with mark sheet / result claims"
+            ]
+          }
+        }
+      },
+      "extracted_iocs": {
+        "phone_numbers": [
+          "01911223344"
+        ],
+        "telegram_handles": [],
+        "telegram_links": [
+          "t.me/dhaka_board_insider"
+        ],
+        "whatsapp_links": []
+      }
+    },
+    {
+      "post_id": "fb_scam_1004",
+      "target_scope_group": "All Education Board Result & Marks Update",
+      "group_id": "bd_board_results_2026",
+      "author_name": "Result_Hack_Master",
+      "author_profile_url": "https://facebook.com/result_hack_master",
+      "post_url": "https://facebook.com/groups/bd_board_results_2026/posts/1004",
+      "timestamp": "2026-08-11T04:50:00Z",
+      "search_keyword_matched": "Increase SSC marks",
+      "post_content": "এসএসসি মার্কস পরিবর্তন করতে চান? বোর্ড চ্যালেঞ্জ রেজাল্ট ওয়েট না করে আমাদের সাভিস ব্যবহার করুন। রকেট (Rocket) বা উপায় (Upay) একাউন্ট 01344556677 এ ২০০০ টাকা দিলে আপনার রোল ও রেজিস্টেশন নম্বরের মার্কশিট আপডেট করে দেওয়া হবে।\nপ্রমাণ দেখতে আমাদের টেলিগ্রাম চ্যানেলে জয়েন করুন @ssc_result_change_proof",
+      "has_media": false,
+      "media_urls": [],
+      "threat_analysis": {
+        "risk_level": "CRITICAL",
+        "threat_score": 100,
+        "is_scam": true,
+        "heuristics_breakdown": {
+          "monetary_requests": {
+            "detected": true,
+            "matches": [
+              "Rocket",
+              "রকেট",
+              "Upay"
+            ]
+          },
+          "social_engineering": {
+            "detected": true,
+            "matches": [
+              "বোর্ড চ্যালেঞ্জ"
+            ]
+          },
+          "external_diversion": {
+            "detected": true,
+            "matches": []
+          },
+          "visual_fraud": {
+            "detected": false,
+            "matches": []
+          }
+        }
+      },
+      "extracted_iocs": {
+        "phone_numbers": [
+          "01344556677"
+        ],
+        "telegram_handles": [
+          "ssc_result_change_proof"
+        ],
+        "telegram_links": [],
+        "whatsapp_links": []
+      }
+    },
+    {
+      "post_id": "fb_benign_1005",
+      "target_scope_group": "SSC Exam Preparation Bangladesh 2026",
+      "group_id": "ssc_prep_bd_2026",
+      "author_name": "Academic_Helper_Rana",
+      "author_profile_url": "https://facebook.com/academic_helper_rana",
+      "post_url": "https://facebook.com/groups/ssc_prep_bd_2026/posts/1005",
+      "timestamp": "2026-08-11T05:00:00Z",
+      "search_keyword_matched": "SSC 2026 result change",
+      "post_content": "সতর্কতা: এসএসসি রেজাল্ট পরিবর্তনের নামে ফেসবুকে কোনো টাকা পেমেন্ট করবেন না! কোনো বোর্ড কর্মকর্তা বা আইটি কর্মী টাকা নিয়ে রেজাল্ট চেঞ্জ করতে পারে না। সব ভুয়া প্রতারক চক্র। আসল বোর্ড চ্যালেঞ্জের জন্য শুধু শিক্ষা বোর্ডের অফিসিয়াল ওয়েবসাইট eboardresults.com ব্যবহার করুন।",
+      "has_media": false,
+      "media_urls": [],
+      "threat_analysis": {
+        "risk_level": "LOW (AWARENESS)",
+        "threat_score": 15,
+        "is_scam": false,
+        "heuristics_breakdown": {
+          "monetary_requests": {
+            "detected": true,
+            "matches": [
+              "পেমেন্ট",
+              "টাকা পেমেন্ট"
+            ]
+          },
+          "social_engineering": {
+            "detected": true,
+            "matches": [
+              "বোর্ড চ্যালেঞ্জ",
+              "রেজাল্ট পরিবর্তন"
+            ]
+          },
+          "external_diversion": {
+            "detected": false,
+            "matches": []
+          },
+          "visual_fraud": {
+            "detected": false,
+            "matches": []
+          }
+        }
+      },
+      "extracted_iocs": {
+        "phone_numbers": [],
+        "telegram_handles": [],
+        "telegram_links": [],
+        "whatsapp_links": []
+      }
+    },
+    {
+      "post_id": "fb_scam_1006",
+      "target_scope_group": "Dhaka & Rajshahi Board SSC 2026 Helpline",
+      "group_id": "dhaka_board_ssc_2026",
+      "author_name": "Crypto_SSC_Upgrader",
+      "author_profile_url": "https://facebook.com/crypto_ssc_upgrader",
+      "post_url": "https://facebook.com/groups/dhaka_board_ssc_2026/posts/1006",
+      "timestamp": "2026-08-11T05:20:00Z",
+      "search_keyword_matched": "SSC marks upgrade/amend",
+      "post_content": "Instant SSC Result Upgrade 2026 via Crypto/USDT or bKash 01566778899. We bypass rescrutiny and update DB directly. Live proof video available in inbox! Contact @ssc_crypto_fix",
+      "has_media": true,
+      "media_urls": [
+        "https://m.facebook.com/photo.php?fbid=998866"
+      ],
+      "threat_analysis": {
+        "risk_level": "CRITICAL",
+        "threat_score": 90,
+        "is_scam": true,
+        "heuristics_breakdown": {
+          "monetary_requests": {
+            "detected": true,
+            "matches": [
+              "bKash",
+              "Crypto",
+              "USDT"
+            ]
+          },
+          "social_engineering": {
+            "detected": false,
+            "matches": []
+          },
+          "external_diversion": {
+            "detected": true,
+            "matches": []
+          },
+          "visual_fraud": {
+            "detected": true,
+            "matches": [
+              "Image attachment with mark sheet / result claims",
+              "Live proof"
+            ]
+          }
+        }
+      },
+      "extracted_iocs": {
+        "phone_numbers": [
+          "01566778899"
+        ],
+        "telegram_handles": [
+          "ssc_crypto_fix"
+        ],
+        "telegram_links": [],
+        "whatsapp_links": []
+      }
+    }
+  ]
+}
