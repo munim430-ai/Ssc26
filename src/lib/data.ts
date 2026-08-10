@@ -1,19 +1,48 @@
 import { createServerClient } from '@/lib/supabase-server'
 import type { Board, Exam, ExaminationYear, Result } from '@/lib/types'
 
+const DEFAULT_BOARDS: Board[] = [
+  { code: 'barisal', name: 'Barisal' },
+  { code: 'chittagong', name: 'Chittagong' },
+  { code: 'comilla', name: 'Comilla' },
+  { code: 'dhaka', name: 'Dhaka' },
+  { code: 'dinajpur', name: 'Dinajpur' },
+  { code: 'jessore', name: 'Jessore' },
+  { code: 'madrasah', name: 'Madrasah' },
+  { code: 'mymensingh', name: 'Mymensingh' },
+  { code: 'rajshahi', name: 'Rajshahi' },
+  { code: 'sylhet', name: 'Sylhet' },
+  { code: 'tec', name: 'Technical' },
+]
+
+const DEFAULT_EXAMS: Exam[] = [
+  { code: 'jsc', name: 'JSC/JDC' },
+  { code: 'ssc', name: 'SSC/Dakhil/Equivalent' },
+  { code: 'hsc', name: 'HSC/Alim/Equivalent' },
+  { code: 'dibs', name: 'DIBS (Diploma in Business Studies)' },
+]
+
 // ---- Reference data for the search-form dropdowns -----------------------
 export async function getEducationBoards(): Promise<Board[]> {
-  const sb = createServerClient()
-  const { data, error } = await sb.from('boards').select('*').order('name')
-  if (error) throw error
-  return (data as Board[]) ?? []
+  try {
+    const sb = createServerClient()
+    const { data, error } = await sb.from('boards').select('*').order('name')
+    if (error || !data || data.length === 0) return DEFAULT_BOARDS
+    return data as Board[]
+  } catch {
+    return DEFAULT_BOARDS
+  }
 }
 
 export async function getExaminations(): Promise<Exam[]> {
-  const sb = createServerClient()
-  const { data, error } = await sb.from('exams').select('*').order('name')
-  if (error) throw error
-  return (data as Exam[]) ?? []
+  try {
+    const sb = createServerClient()
+    const { data, error } = await sb.from('exams').select('*').order('name')
+    if (error || !data || data.length === 0) return DEFAULT_EXAMS
+    return data as Exam[]
+  } catch {
+    return DEFAULT_EXAMS
+  }
 }
 
 // Years are generated programmatically (1996..currentYear).
@@ -25,10 +54,6 @@ export async function getExaminationYears(): Promise<ExaminationYear[]> {
 }
 
 // ---- Lookup -------------------------------------------------------------
-// Matches the (board, roll_number, registration_no) unique key.
-// `examCode` and `examYear` are accepted for signature compatibility with
-// the existing StudentSearchForm; the unique triple is the real filter, but
-// we also narrow by year when provided for safety.
 export async function searchStudent(
   roll: number,
   boardCode: string,
@@ -36,24 +61,32 @@ export async function searchStudent(
   examYear?: number,
   reg?: number,
 ): Promise<Result | null> {
-  const sb = createServerClient()
-  let q = sb
-    .from('results')
-    .select('*')
-    .eq('roll_number', roll)
-    .eq('board', boardCode)
-  if (typeof examYear === 'number') q = q.eq('exam_year', examYear)
-  if (typeof reg === 'number') q = q.eq('registration_no', reg)
-  const { data, error } = await q.limit(1).maybeSingle()
-  if (error) return null
-  return (data as Result) ?? null
+  try {
+    const sb = createServerClient()
+    let q = sb
+      .from('results')
+      .select('*')
+      .eq('roll_number', roll)
+      .eq('board', boardCode)
+    if (typeof examYear === 'number') q = q.eq('exam_year', examYear)
+    if (typeof reg === 'number') q = q.eq('registration_no', reg)
+    const { data, error } = await q.limit(1).maybeSingle()
+    if (error) return null
+    return (data as Result) ?? null
+  } catch {
+    return null
+  }
 }
 
 export async function getResultById(id: string): Promise<Result | null> {
-  const sb = createServerClient()
-  const { data, error } = await sb.from('results').select('*').eq('id', id).maybeSingle()
-  if (error) return null
-  return (data as Result) ?? null
+  try {
+    const sb = createServerClient()
+    const { data, error } = await sb.from('results').select('*').eq('id', id).maybeSingle()
+    if (error) return null
+    return (data as Result) ?? null
+  } catch {
+    return null
+  }
 }
 
 // ---- GPA ----------------------------------------------------------------
@@ -74,5 +107,4 @@ export function calculateGPA(result: Pick<Result, 'subjects'>): number | null {
   return Math.round((sum / n) * 100) / 100
 }
 
-// Back-compat: StudentSearchForm imports GRADE_OPTIONS indirectly via AdminDashboard.
 export const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C', 'D', 'F']
