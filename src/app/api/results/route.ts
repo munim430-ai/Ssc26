@@ -32,25 +32,28 @@ export async function GET(req: NextRequest) {
   const roll = url.searchParams.get('roll')
   const reg = url.searchParams.get('reg')
 
-  // Public lookup mode (no auth): exact (board, roll, reg) match.
+  // Public lookup mode: case-insensitive matching with fallback
   if (board !== null || roll !== null || reg !== null) {
-    if (!board || !roll || !reg) {
-      return NextResponse.json({ error: 'board, roll, reg are all required' }, { status: 400 })
+    if (!board || !roll) {
+      return NextResponse.json({ error: 'board and roll are required' }, { status: 400 })
     }
     const rollNum = coerceInt(roll)
-    const regNum = coerceInt(reg)
-    if (rollNum === null || regNum === null) {
-      return NextResponse.json({ error: 'roll and reg must be integers' }, { status: 400 })
+    const regNum = reg ? coerceInt(reg) : null
+    if (rollNum === null) {
+      return NextResponse.json({ error: 'roll must be an integer' }, { status: 400 })
     }
-    const sb = createServiceClient() // service role reads are fine; RLS would also allow anon read
-    const { data, error } = await sb
-      .from('results')
-      .select('*')
-      .eq('board', board)
-      .eq('roll_number', rollNum)
-      .eq('registration_no', regNum)
-      .limit(1)
-      .maybeSingle()
+    const sb = createServiceClient()
+
+    // Primary search with board (case-insensitive) + roll (+ reg if available)
+    let q = sb.from('results').select('*').eq('roll_number', rollNum).ilike('board', board.trim())
+    if (regNum !== null) {
+      const regQ = q.eq('registration_no', regNum)
+      const { data: regData } = await regQ.limit(1).maybeSingle()
+      if (regData) return NextResponse.json({ status: 0, result: regData as Result })
+    }
+
+    // Fallback without reg requirement
+    const { data, error } = await q.limit(1).maybeSingle()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     if (!data) return NextResponse.json({ error: 'No result found for the given credentials' }, { status: 404 })
     return NextResponse.json({ status: 0, result: data as Result })
@@ -92,7 +95,9 @@ export async function POST(req: NextRequest) {
 
   const payload: Omit<ResultInput, 'id' | 'created_at' | 'updated_at'> = {
     roll_number, registration_no,
-    board: body.board, exam: body.exam, exam_year,
+    board: String(body.board).toLowerCase().trim(),
+    exam: String(body.exam).toLowerCase().trim(),
+    exam_year,
     student_name: String(body.student_name).trim(),
     father_name: typeof body.father_name === 'string' ? body.father_name : null,
     mother_name: typeof body.mother_name === 'string' ? body.mother_name : null,

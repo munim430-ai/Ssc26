@@ -45,9 +45,12 @@ export async function PATCH(req: NextRequest, ctx: { params: { id: string } }) {
   const update: Record<string, unknown> = {}
   const strKeys = [
     'student_name','father_name','mother_name','group_name','student_type','gender',
-    'date_of_birth','session','institute_name','result_status','remarks','board','exam',
+    'date_of_birth','session','institute_name','result_status','remarks',
   ] as const
   for (const k of strKeys) if (typeof body[k] === 'string') update[k] = body[k]
+  if (typeof body.board === 'string') update.board = body.board.toLowerCase().trim()
+  if (typeof body.exam === 'string') update.exam = body.exam.toLowerCase().trim()
+
   for (const k of ['roll_number','registration_no','exam_year'] as const) {
     if (body[k] !== undefined) {
       const n = coerceInt(body[k])

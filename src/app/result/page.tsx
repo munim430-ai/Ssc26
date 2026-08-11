@@ -30,13 +30,19 @@ export default async function ResultPage({ searchParams }: Props) {
   let notFound = false
 
   if (board && roll) {
-    result = await searchStudent(
-      parseInt(roll),
-      board,
-      exam ?? '',
-      year ? parseInt(year) : undefined,
-      reg ? parseInt(reg) : undefined,
-    )
+    const cleanRoll = parseInt(String(roll).replace(/[^0-9]/g, ''), 10)
+    const cleanReg = reg ? parseInt(String(reg).replace(/[^0-9]/g, ''), 10) : undefined
+    const cleanYear = year ? parseInt(String(year).replace(/[^0-9]/g, ''), 10) : undefined
+
+    if (!isNaN(cleanRoll)) {
+      result = await searchStudent(
+        cleanRoll,
+        board.trim(),
+        exam ? exam.trim() : undefined,
+        !isNaN(cleanYear || NaN) ? cleanYear : undefined,
+        !isNaN(cleanReg || NaN) ? cleanReg : undefined,
+      )
+    }
     if (!result) notFound = true
   } else {
     notFound = true

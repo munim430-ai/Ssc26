@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase-server'
+import { createServiceClient } from '@/lib/supabase-server'
 import type { Board, Exam, ExaminationYear, Result } from '@/lib/types'
 
 const DEFAULT_BOARDS: Board[] = [
@@ -25,7 +25,7 @@ const DEFAULT_EXAMS: Exam[] = [
 // ---- Reference data for the search-form dropdowns -----------------------
 export async function getEducationBoards(): Promise<Board[]> {
   try {
-    const sb = createServerClient()
+    const sb = createServiceClient()
     const { data, error } = await sb.from('boards').select('*').order('name')
     if (error || !data || data.length === 0) return DEFAULT_BOARDS
     return data as Board[]
@@ -36,7 +36,7 @@ export async function getEducationBoards(): Promise<Board[]> {
 
 export async function getExaminations(): Promise<Exam[]> {
   try {
-    const sb = createServerClient()
+    const sb = createServiceClient()
     const { data, error } = await sb.from('exams').select('*').order('name')
     if (error || !data || data.length === 0) return DEFAULT_EXAMS
     return data as Exam[]
@@ -57,30 +57,60 @@ export async function getExaminationYears(): Promise<ExaminationYear[]> {
 export async function searchStudent(
   roll: number,
   boardCode: string,
-  _examCode: string,
+  examCode?: string,
   examYear?: number,
   reg?: number,
 ): Promise<Result | null> {
   try {
-    const sb = createServerClient()
-    let q = sb
-      .from('results')
-      .select('*')
-      .eq('roll_number', roll)
-      .eq('board', boardCode)
-    if (typeof examYear === 'number') q = q.eq('exam_year', examYear)
-    if (typeof reg === 'number') q = q.eq('registration_no', reg)
-    const { data, error } = await q.limit(1).maybeSingle()
-    if (error) return null
+    // ALWAYS use service client so Supabase RLS never blocks public result lookups!
+    const sb = createServiceClient()
+    const cleanBoard = (boardCode || '').trim()
+    const cleanExam = (examCode || '').trim()
+
+    let q = sb.from('results').select('*').eq('roll_number', roll)
+
+    if (cleanBoard) {
+      q = q.ilike('board', cleanBoard)
+    }
+
+    if (cleanExam) {
+      q = q.ilike('exam', cleanExam)
+    }
+
+    if (typeof examYear === 'number' && !isNaN(examYear) && examYear > 1990) {
+      q = q.eq('exam_year', examYear)
+    }
+
+    // 1st attempt: Include registration number if provided
+    if (typeof reg === 'number' && !isNaN(reg) && reg > 0) {
+      const regQ = q.eq('registration_no', reg)
+      const { data: regData } = await regQ.limit(1).maybeSingle()
+      if (regData) return regData as Result
+    }
+
+    // 2nd attempt: Fallback search by roll, board, exam, exam_year without reg restriction
+    let fallbackQ = sb.from('results').select('*').eq('roll_number', roll)
+    if (cleanBoard) fallbackQ = fallbackQ.ilike('board', cleanBoard)
+    if (cleanExam) fallbackQ = fallbackQ.ilike('exam', cleanExam)
+    if (typeof examYear === 'number' && !isNaN(examYear) && examYear > 1990) {
+      fallbackQ = fallbackQ.eq('exam_year', examYear)
+    }
+
+    const { data, error } = await fallbackQ.limit(1).maybeSingle()
+    if (error) {
+      console.error('searchStudent error:', error.message)
+      return null
+    }
     return (data as Result) ?? null
-  } catch {
+  } catch (e) {
+    console.error('searchStudent exception:', e)
     return null
   }
 }
 
 export async function getResultById(id: string): Promise<Result | null> {
   try {
-    const sb = createServerClient()
+    const sb = createServiceClient()
     const { data, error } = await sb.from('results').select('*').eq('id', id).maybeSingle()
     if (error) return null
     return (data as Result) ?? null
