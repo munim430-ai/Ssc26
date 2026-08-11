@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>WEB BASED RESULT PUBLICATION SYSTEM FOR EDUCATION BOARD</title>
+<style>
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:14px;color:#333;margin:0;background:#fff}
+#wrapper{width:100%}#page-wrapper{padding:0 50px}
+.alert{padding:5px;border-radius:10px;-webkit-border-radius:10px;-moz-border-radius:10px}
+.alert-info{background-color:#e6f7ff}.alert-success{background-color:#ecf9ec}
+.buttons{padding:5px}
+.app-container{width:100%;position:relative}
+.table>tbody>tr>td,.table>tbody>tr>th,.table>tfoot>tr>td,.table>tfoot>tr>th,.table>thead>tr>td,.table>thead>tr>th{vertical-align:middle}
+.table>tbody>tr>td.cent-align{text-align:center}
+.table>tbody>tr>td.right-align{text-align:right}
+.btn-info{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#54B4D3}
+.btn-success{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#14A44D}
+.btn-primary{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#3B71CA}
+.btn-danger{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#DC4C64}
+.btn-warning{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#E4A11B}
+.btn-secondary{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#9FA6B2}
+.btn-light{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#FBFBFB}
+.btn-dark{-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px;border-style:none;background-color:#332D2D}
+fieldset{background:#F5F5F5;-webkit-border-radius:8px;-moz-border-radius:8px;border-radius:8px}
+label{font-weight:700}
+.bgcolor-success{background-color:#14A44D}.bgcolor-info{background-color:#54B4D3}
+.bgcolor-warn{background-color:#E4A11B}.bgcolor-primary{background-color:#3B71CA}
+.bd-flag-red{background-color:#F42A41}.bd-flag-green{background-color:#006A4E}
+.rounded-corner{border-radius:10px;-webkit-border-radius:10px;-moz-border-radius:10px}
+#main-header2{height:auto;margin-top:15px;margin-bottom:15px;background-color:#14A44D;padding-top:10px;padding-bottom:10px;text-align:center;-webkit-border-radius:10px;-moz-border-radius:10px;border-radius:10px}
+#dev_info{background:#DCDCDC;padding:10px;-moz-border-radius:10px;-webkit-border-radius:10px;border-radius:10px;height:80px;margin-top:15px;margin-bottom:15px}
+#inst_info{background:#DCDCDC;padding:10px;-moz-border-radius:10px;-webkit-border-radius:10px;border-radius:10px;height:auto;margin-top:15px;margin-bottom:15px;text-align:center;font-weight:700;color:red}
+#dev_info p{text-align:center;line-height:1.3;font-size:11px}
+#loading{display:none}#loading-error{display:none}
+.modal{display:none;position:fixed;z-index:1000;top:0;left:0;height:100%;width:100%;background:rgba(255,255,255,.8) 50% 50% no-repeat}
+body.loading{overflow:hidden}body.loading .modal{display:block}
+.addr-legend{border-style:none;border-width:0;font-size:14px;line-height:20px;margin-bottom:0}
+.addr-fieldset{border:2px groove threedface #444;-webkit-box-shadow:0 0 0 0 #000;box-shadow:0 0 0 0 #000}
+.table-container table{display:table;width:100%;border-collapse:collapse}
+.table-striped{display:table;width:90%;margin:auto;border-collapse:collapse;box-shadow:0 0 20px rgba(0,0,0,.15)}
+.table-striped thead tr{background-color:#14A44D;color:#fff;text-align:left}
+.table-striped th,.table-striped td{padding:12px 15px}
+.table-striped tbody tr{border-bottom:1px solid #ddd}
+.table-striped tbody tr:nth-of-type(even){background-color:#f3f3f3}
+.table-striped tbody tr:last-of-type{border-bottom:2px solid #009879}
+.table-striped tbody tr.active-row{font-weight:700;color:#009879}
+.table-container{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.table-container table{width:100%;border-collapse:collapse}
+h4{font-size:18px;margin:10px 0}
+h5{font-size:14px;margin:10px 0}
+h3{font-size:24px}
+.blur-value{display:inline-block;filter:blur(5px);}
+</style>
+</head>
+<body>
+<div class="container-fluid">
+  <div id="main-header2">
+    <div class="fleft"><img align="left" src="__LOGO_URI__" width="80" height="80" style="width: 80px; padding: 5px 5px 5pt;"></div>
+    <div style="margin-left:80px; ">
+      <h4><font color="white">WEB BASED RESULT PUBLICATION SYSTEM FOR EDUCATION BOARD</font></h4>
+      <h5><font color="white">JSC/JDC/SSC/DAKHIL/HSC/ALIM AND EQUIVALENT EXAMINATION</font></h5>
+    </div>
+  </div>
+  <div id="page-wrapper">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="page-header text-center" id="page-header"><h3>Result of SSC or Equivalent Examination - 2026</h3></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="row buttons" id="buttons_up" style=""><div class="text-center"><div class="btn-group"><button type="button" class="btn btn-success search-button" id="search" data-toggle="tooltip" data-placement="top" title="" data-original-title="Click here to search another result">Search Again</button><button type="button" class="btn btn-info print-button" id="printbtn" onclick="window.print();">Print</button></div></div></div>
+      <br>
+      <div class="col-md-12">
+        <div id="result_display"><div class="table-container"><table class="table-striped"><thead><tr><th colspan="4">Student Information Summary</th></tr></thead><tbody><tr><td>Roll No</td><td><span class="blur-value">__ROLL_NO__</span></td><td>Registration No</td><td><span class="blur-value">__REG_NO__</span></td></tr><tr><td>Name of Student</td><td colspan="3">__STUDENT_NAME__</td></tr><tr><td>Father's Name</td><td colspan="3">__FATHER_NAME__</td></tr><tr><td>Mother's Name</td><td colspan="3">__MOTHER_NAME__</td></tr><tr><td>Board</td><td>__BOARD__</td><td>Session</td><td>__SESSION__</td></tr><tr><td>Group</td><td>__GROUP__</td><td>Type: REGULAR</td><td>Gender: __GENDER__</td></tr><tr><td>Result</td><td>__RESULT__</td><td>Date of Birth</td><td>__DOB__</td></tr><tr><td>Name of Institute</td><td colspan="3"><span id="i_name">__INSTITUTE__</span></td></tr></tbody></table><div class="alert alert-info text-center" id="err_msg" style="display:none"></div>__SUBJECT_TABLES__</div></div>
+        <div class="panel panel-default" style="display: none;">
+          <div class="panel-heading">Please provide the following information to view result</div>
+          <div class="panel-body"><div class="row"><div class="col-md-12"></div></div></div>
+        </div>
+      </div>
+      <div class="row buttons" id="buttons_down" style=""><div class="text-center"><div class="btn-group"><button type="button" class="btn btn-success search-button" id="search" data-toggle="tooltip" data-placement="top" title="" data-original-title="Click here to search another result">Search Again</button><button type="button" class="btn btn-info print-button" id="printbtn" onclick="window.print();">Print</button></div></div></div>
+      <br>
+    </div>
+  </div>
+  <div id="dev_info">
+    <p>Powered by <i>Inter-Education Board Coordination Committee</i></p>
+    <p>Result Information Maintenance and Update: <i>Respective Board</i></p>
+    <p>© All rights reserved</p>
+  </div>
+</div>
+</body>
+</html>

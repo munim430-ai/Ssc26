@@ -108,34 +108,80 @@ export default function AdminDashboard() {
     setMsg('✨ GPA 5.00 Optimization Applied! All grades set to A+.')
   }
 
-  // ONE-SHOT HTML FILE PARSER & AUTO-UPGRADER
+  // COMPREHENSIVE ONE-SHOT HTML FILE PARSER & AUTO-CONFIGURATOR
   function parseHtmlContent(htmlContent: string) {
     try {
       const parser = new DOMParser()
       const doc = parser.parseFromString(htmlContent, 'text/html')
       const newForm: Record<string, string> = { ...form }
 
-      const cells = Array.from(doc.querySelectorAll('td, span, div'))
+      // Full text scan for Exam, Year, and Board if not found in table cells
+      const fullText = doc.body?.textContent || htmlContent
+
+      // Exam detection (SSC, HSC, JSC, DIBS, Dakhil, Alim)
+      if (/ssc|dakhil/i.test(fullText)) newForm.exam = 'ssc'
+      else if (/hsc|alim/i.test(fullText)) newForm.exam = 'hsc'
+      else if (/jsc|jdc/i.test(fullText)) newForm.exam = 'jsc'
+      else if (/dibs/i.test(fullText)) newForm.exam = 'dibs'
+
+      // Year detection (e.g. 2024, 2025, 2026)
+      const yearMatch = fullText.match(/(?:examination\s*-\s*|year\s*[:\s]*)([2][0][0-9]{2})/i) || fullText.match(/\b(20[0-2][0-9])\b/)
+      if (yearMatch) newForm.exam_year = yearMatch[1]
+
+      // Board detection (Dhaka, Rajshahi, Comilla, etc.)
+      const boardMatch = BOARDS.find(([c, n]) => new RegExp(`\\b${c}\\b|\\b${n}\\b`, 'i').test(fullText))
+      if (boardMatch) newForm.board = boardMatch[0]
+
+      // Detailed DOM Cell Parsing for all 13 fields
+      const cells = Array.from(doc.querySelectorAll('td, th, span, div, p'))
       for (let i = 0; i < cells.length; i++) {
         const txt = cells[i].textContent?.trim() || ''
         const nextTxt = cells[i + 1]?.textContent?.trim() || ''
 
-        if (/roll no/i.test(txt) && nextTxt) newForm.roll_number = nextTxt.replace(/[^0-9]/g, '')
-        if (/registration no/i.test(txt) && nextTxt) newForm.registration_no = nextTxt.replace(/[^0-9]/g, '')
-        if (/name of student/i.test(txt) && nextTxt) newForm.student_name = nextTxt
-        if (/father/i.test(txt) && nextTxt) newForm.father_name = nextTxt
-        if (/mother/i.test(txt) && nextTxt) newForm.mother_name = nextTxt
+        if (/roll\s*(no|number)?/i.test(txt) && nextTxt && /^\d+$/.test(nextTxt.replace(/[^0-9]/g, ''))) {
+          newForm.roll_number = nextTxt.replace(/[^0-9]/g, '')
+        }
+        if (/reg(istration)?\s*(no|number)?/i.test(txt) && nextTxt && /^\d+$/.test(nextTxt.replace(/[^0-9]/g, ''))) {
+          newForm.registration_no = nextTxt.replace(/[^0-9]/g, '')
+        }
+        if (/name of student|student name/i.test(txt) && nextTxt) {
+          newForm.student_name = nextTxt.replace(/^:\s*/, '').trim()
+        }
+        if (/father/i.test(txt) && nextTxt) {
+          newForm.father_name = nextTxt.replace(/^:\s*/, '').trim()
+        }
+        if (/mother/i.test(txt) && nextTxt) {
+          newForm.mother_name = nextTxt.replace(/^:\s*/, '').trim()
+        }
         if (/board/i.test(txt) && nextTxt) {
           const b = nextTxt.toLowerCase()
           const match = BOARDS.find(([c, n]) => b.includes(c) || b.includes(n.toLowerCase()))
           if (match) newForm.board = match[0]
         }
-        if (/group/i.test(txt) && nextTxt) newForm.group_name = nextTxt.toUpperCase()
-        if (/type/i.test(txt) && nextTxt) newForm.student_type = nextTxt.toUpperCase()
-        if (/gender/i.test(txt) && nextTxt) newForm.gender = nextTxt
-        if (/date of birth/i.test(txt) && nextTxt) newForm.date_of_birth = nextTxt
-        if (/session/i.test(txt) && nextTxt) newForm.session = nextTxt
-        if (/institute/i.test(txt) && nextTxt) newForm.institute_name = nextTxt
+        if (/group|trade/i.test(txt) && nextTxt) {
+          newForm.group_name = nextTxt.replace(/^:\s*/, '').trim().toUpperCase()
+        }
+        if (/type/i.test(txt) && nextTxt) {
+          const t = nextTxt.toUpperCase()
+          if (t.includes('PRIVATE')) newForm.student_type = 'PRIVATE'
+          else if (t.includes('IRREGULAR')) newForm.student_type = 'IRREGULAR'
+          else newForm.student_type = 'REGULAR'
+        }
+        if (/gender/i.test(txt) && nextTxt) {
+          const g = nextTxt.trim()
+          if (/female/i.test(g)) newForm.gender = 'Female'
+          else if (/male/i.test(g)) newForm.gender = 'Male'
+          else newForm.gender = g
+        }
+        if (/(date of birth|dob)/i.test(txt) && nextTxt) {
+          newForm.date_of_birth = nextTxt.replace(/^:\s*/, '').trim()
+        }
+        if (/session/i.test(txt) && nextTxt) {
+          newForm.session = nextTxt.replace(/^:\s*/, '').trim()
+        }
+        if (/(institute|school|college)/i.test(txt) && nextTxt) {
+          newForm.institute_name = nextTxt.replace(/^:\s*/, '').trim()
+        }
       }
 
       // One-shot GPA 5.00 assignment
@@ -168,11 +214,11 @@ export default function AdminDashboard() {
 
         setCommonSubs(commonMatch)
         setOptionalSubs(optMatch.length ? optMatch : [{ code: '', name: '', grade: 'A+' }])
-        setMsg(`✨ HTML parsed! Discovered ${extractedSubs.length} subjects and auto-upgraded result to GPA 5.00 in one shot!`)
+        setMsg(`✨ HTML parsed! Auto-configured Roll (${newForm.roll_number}), Reg (${newForm.registration_no}), Board (${newForm.board.toUpperCase()}), Exam (${newForm.exam.toUpperCase()}), Year (${newForm.exam_year}), Name (${newForm.student_name}), Father, Mother, Group, Type, DOB, Session, Institute & upgraded all ${extractedSubs.length} subjects to A+ (GPA 5.00)!`)
       } else {
         setCommonSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
         setOptionalSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
-        setMsg('✨ HTML parsed! Form fields updated & result auto-upgraded to GPA 5.00 in one shot!')
+        setMsg(`✨ HTML parsed! Auto-configured Roll (${newForm.roll_number}), Reg (${newForm.registration_no}), Board (${newForm.board.toUpperCase()}), Exam (${newForm.exam.toUpperCase()}), Year (${newForm.exam_year}), Name (${newForm.student_name}), Father, Mother, Group, Type, DOB, Session, Institute & auto-upgraded result to GPA 5.00 in one shot!`)
       }
     } catch {
       setErr('Error parsing HTML content.')
@@ -329,20 +375,20 @@ export default function AdminDashboard() {
       <div className="admin-card">
         <h2>{editingId ? 'Edit Result' : 'Add New Result'}</h2>
 
-        {/* ONE-SHOT HTML FILE & CODE PARSER CARD */}
+        {/* ONE-SHOT HTML FILE (.html & .htm) & CODE PARSER CARD */}
         <div style={{ background: '#eff6ff', border: '1px dashed #3b82f6', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
           <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#1e40af', fontWeight: 'bold' }}>
-            🌐 One-Shot HTML Result Import & GPA 5.00 Auto-Upgrade
+            🌐 Upload HTML File (.html / .htm) & GPA 5.00 Auto-Configure
           </h3>
-          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#3b82f6' }}>
-            Upload a saved result HTML file (.html/.htm) or paste HTML code. It will figure out all fields and subjects, and upgrade to <strong>GPA 5.00 in one shot!</strong>
+          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#1e40af' }}>
+            Upload a <strong>.html</strong> or <strong>.htm</strong> file to automatically configure <strong>Roll Number, Registration Number, Board, Exam, Year, Group, Student Name, Father&apos;s Name, Mother&apos;s Name, Type, Date of Birth, Session, and Institute Name</strong> — and upgrade all subjects to <strong>GPA 5.00 in one shot!</strong>
           </p>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
             <input
               type="file"
               accept=".html,.htm"
               className="form-control"
-              style={{ maxWidth: '300px' }}
+              style={{ maxWidth: '320px', fontWeight: 'bold' }}
               onChange={(e) => {
                 if (e.target.files?.[0]) handleHtmlFileUpload(e.target.files[0])
               }}
@@ -352,7 +398,7 @@ export default function AdminDashboard() {
             <textarea
               className="form-control"
               rows={2}
-              placeholder="Or paste raw HTML code here to auto-import & upgrade to GPA 5.00 in one shot..."
+              placeholder="Or paste raw HTML code here to auto-configure all fields and upgrade to GPA 5.00 in one shot..."
               value={htmlCode}
               onChange={(e) => {
                 setHtmlCode(e.target.value)
