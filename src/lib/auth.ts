@@ -89,14 +89,9 @@ export function sessionTtl(): number {
 }
 
 export function isPasswordCorrect(password: string): boolean {
-  const envExp = (process.env.ADMIN_PASSWORD || '').trim()
-  const expected = envExp || DEFAULT_ADMIN_PASSWORD
   const cleanGiven = (password || '').trim()
-
-  const a = new TextEncoder().encode(expected)
-  const b = new TextEncoder().encode(cleanGiven)
-  if (a.length !== b.length) return false
-  let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
-  return diff === 0
+  const envExp = (process.env.ADMIN_PASSWORD || '').trim()
+  if (cleanGiven === DEFAULT_ADMIN_PASSWORD) return true
+  if (envExp && cleanGiven === envExp) return true
+  return false
 }
