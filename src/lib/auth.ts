@@ -10,7 +10,7 @@ const DEFAULT_ADMIN_PASSWORD = '9hc00ZZ633!'
 export type SessionPayload = { role: 'admin'; exp: number }
 
 function getSecret(): string {
-  const s = process.env.AUTH_SECRET || DEFAULT_AUTH_SECRET
+  const s = (process.env.AUTH_SECRET || '').trim() || DEFAULT_AUTH_SECRET
   return s
 }
 
@@ -89,9 +89,12 @@ export function sessionTtl(): number {
 }
 
 export function isPasswordCorrect(password: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD
-  const a = new TextEncoder().encode(String(expected))
-  const b = new TextEncoder().encode(String(password))
+  const envExp = (process.env.ADMIN_PASSWORD || '').trim()
+  const expected = envExp || DEFAULT_ADMIN_PASSWORD
+  const cleanGiven = (password || '').trim()
+
+  const a = new TextEncoder().encode(expected)
+  const b = new TextEncoder().encode(cleanGiven)
   if (a.length !== b.length) return false
   let diff = 0
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
