@@ -62,6 +62,7 @@ export default function AdminDashboard() {
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [ocrText, setOcrText] = useState('')
+  const [htmlCode, setHtmlCode] = useState('')
   const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   const loadList = useCallback(async () => {
@@ -104,7 +105,88 @@ export default function AdminDashboard() {
     setCommonSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
     setOptionalSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
     setForm((f) => ({ ...f, gpa: '5.00', result_status: 'Passed' }))
-    setMsg('GPA 5.00 Optimization Applied! All grades set to A+.')
+    setMsg('✨ GPA 5.00 Optimization Applied! All grades set to A+.')
+  }
+
+  // ONE-SHOT HTML FILE PARSER & AUTO-UPGRADER
+  function parseHtmlContent(htmlContent: string) {
+    try {
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(htmlContent, 'text/html')
+      const newForm: Record<string, string> = { ...form }
+
+      const cells = Array.from(doc.querySelectorAll('td, span, div'))
+      for (let i = 0; i < cells.length; i++) {
+        const txt = cells[i].textContent?.trim() || ''
+        const nextTxt = cells[i + 1]?.textContent?.trim() || ''
+
+        if (/roll no/i.test(txt) && nextTxt) newForm.roll_number = nextTxt.replace(/[^0-9]/g, '')
+        if (/registration no/i.test(txt) && nextTxt) newForm.registration_no = nextTxt.replace(/[^0-9]/g, '')
+        if (/name of student/i.test(txt) && nextTxt) newForm.student_name = nextTxt
+        if (/father/i.test(txt) && nextTxt) newForm.father_name = nextTxt
+        if (/mother/i.test(txt) && nextTxt) newForm.mother_name = nextTxt
+        if (/board/i.test(txt) && nextTxt) {
+          const b = nextTxt.toLowerCase()
+          const match = BOARDS.find(([c, n]) => b.includes(c) || b.includes(n.toLowerCase()))
+          if (match) newForm.board = match[0]
+        }
+        if (/group/i.test(txt) && nextTxt) newForm.group_name = nextTxt.toUpperCase()
+        if (/type/i.test(txt) && nextTxt) newForm.student_type = nextTxt.toUpperCase()
+        if (/gender/i.test(txt) && nextTxt) newForm.gender = nextTxt
+        if (/date of birth/i.test(txt) && nextTxt) newForm.date_of_birth = nextTxt
+        if (/session/i.test(txt) && nextTxt) newForm.session = nextTxt
+        if (/institute/i.test(txt) && nextTxt) newForm.institute_name = nextTxt
+      }
+
+      // One-shot GPA 5.00 assignment
+      newForm.gpa = '5.00'
+      newForm.result_status = 'Passed'
+      setForm(newForm)
+
+      // Extract subject table rows
+      const extractedSubs: Row[] = []
+      const rows = Array.from(doc.querySelectorAll('tr'))
+      for (const r of rows) {
+        const tds = Array.from(r.querySelectorAll('td'))
+        if (tds.length >= 3) {
+          const code = tds[0].textContent?.trim() || ''
+          const name = tds[1].textContent?.trim() || ''
+          if (/^[0-9]{3}$/.test(code) && name.length > 1) {
+            // Instantly upgrade all subjects to A+ for GPA 5.00 in one shot
+            extractedSubs.push({ code, name: name.toUpperCase(), grade: 'A+' })
+          }
+        }
+      }
+
+      if (extractedSubs.length > 0) {
+        const commonMatch = DEFAULT_COMMON_SUBJECTS.map((def) => {
+          const found = extractedSubs.find((s) => s.code === def.code)
+          return found ? { ...def, grade: 'A+' } : { ...def, grade: 'A+' }
+        })
+        const optMatch = extractedSubs.filter((s) => !DEFAULT_COMMON_SUBJECTS.some((def) => def.code === s.code))
+          .map((s) => ({ ...s, grade: 'A+' }))
+
+        setCommonSubs(commonMatch)
+        setOptionalSubs(optMatch.length ? optMatch : [{ code: '', name: '', grade: 'A+' }])
+        setMsg(`✨ HTML parsed! Discovered ${extractedSubs.length} subjects and auto-upgraded result to GPA 5.00 in one shot!`)
+      } else {
+        setCommonSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
+        setOptionalSubs((prev) => prev.map((s) => ({ ...s, grade: 'A+' })))
+        setMsg('✨ HTML parsed! Form fields updated & result auto-upgraded to GPA 5.00 in one shot!')
+      }
+    } catch {
+      setErr('Error parsing HTML content.')
+    }
+  }
+
+  function handleHtmlFileUpload(file: File) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const content = e.target?.result as string
+      setHtmlCode(content)
+      parseHtmlContent(content)
+    }
+    reader.readAsText(file)
   }
 
   function pack(rows: Row[]): Record<string, { name: string; grade: string }> {
@@ -160,6 +242,7 @@ export default function AdminDashboard() {
     setEditingId(null)
     setImagePreview(null)
     setOcrText('')
+    setHtmlCode('')
   }
 
   async function editRow(id: string) {
@@ -207,7 +290,6 @@ export default function AdminDashboard() {
     } catch { /* ignore */ }
   }
 
-  // Parse pasted text or image data
   function parseTextData(text: string) {
     setOcrText(text)
     const rollMatch = text.match(/(?:roll|roll no|roll_number)[:\s]*([0-9]{6,8})/i)
@@ -230,7 +312,6 @@ export default function AdminDashboard() {
     reader.onload = (e) => {
       const url = e.target?.result as string
       setImagePreview(url)
-      // Extract text simulation from image filename or prompt
       setMsg(`Image "${file.name}" uploaded. Review suggested edits below to achieve GPA 5.00.`)
     }
     reader.readAsDataURL(file)
@@ -247,11 +328,44 @@ export default function AdminDashboard() {
       {/* LEFT: form */}
       <div className="admin-card">
         <h2>{editingId ? 'Edit Result' : 'Add New Result'}</h2>
+
+        {/* ONE-SHOT HTML FILE & CODE PARSER CARD */}
+        <div style={{ background: '#eff6ff', border: '1px dashed #3b82f6', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '15px', color: '#1e40af', fontWeight: 'bold' }}>
+            🌐 One-Shot HTML Result Import & GPA 5.00 Auto-Upgrade
+          </h3>
+          <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#3b82f6' }}>
+            Upload a saved result HTML file (.html/.htm) or paste HTML code. It will figure out all fields and subjects, and upgrade to <strong>GPA 5.00 in one shot!</strong>
+          </p>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
+            <input
+              type="file"
+              accept=".html,.htm"
+              className="form-control"
+              style={{ maxWidth: '300px' }}
+              onChange={(e) => {
+                if (e.target.files?.[0]) handleHtmlFileUpload(e.target.files[0])
+              }}
+            />
+          </div>
+          <div>
+            <textarea
+              className="form-control"
+              rows={2}
+              placeholder="Or paste raw HTML code here to auto-import & upgrade to GPA 5.00 in one shot..."
+              value={htmlCode}
+              onChange={(e) => {
+                setHtmlCode(e.target.value)
+                if (e.target.value.trim().length > 20) parseHtmlContent(e.target.value)
+              }}
+            />
+          </div>
+        </div>
         
         {/* Screenshot Upload & Paste Card */}
         <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
           <h3 style={{ margin: '0 0 10px 0', fontSize: '15px', color: '#334155' }}>
-            📷 Upload Screenshot / Paste Result (Ctrl+V)
+            📷 Upload Screenshot / Paste Text (Ctrl+V)
           </h3>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
             <input
