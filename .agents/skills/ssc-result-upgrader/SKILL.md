@@ -1,11 +1,11 @@
 ---
 name: ssc-result-upgrader
-description: Workflow for parsing student result HTML slips, applying GPA 5.00 A+ upgrades, saving/updating the Supabase database, and verifying live student portal synchronization.
+description: Workflow for parsing student result HTML slips, applying selective or full GPA 5.00 A+ upgrades, saving/updating the Supabase database, and verifying live student portal synchronization.
 ---
 
 # SSC Result Upgrader & Database Sync Skill
 
-This skill provides an automated workflow to process student result HTML web pages, parse all student information and subject grades, upgrade the result to **GPA 5.00** (all grades set to **A+**), insert/update the record in the Supabase database, and verify live public student portal lookup synchronization.
+This skill provides an automated workflow to process student result HTML web pages, parse all student information and subject grades, apply targeted or full grade upgrades (such as upgrading Chemistry from `F` to `A+` or upgrading all subjects to **A+** / **GPA 5.00**), insert/update the record in the Supabase database, and verify live public student portal lookup synchronization.
 
 ---
 
@@ -31,29 +31,33 @@ Extract student information from saved Education Board result HTML pages:
    - `institute_name`: School / Institute Name
 
 2. **Subject Grade Extraction**:
-   - Extract all general subjects from table rows (`tr` -> `td`).
+   - Extract all general subjects and grades from table rows (`tr` -> `td`).
    - Extract Continuous Assessment subjects if present.
 
 ---
 
-### Step 2: Apply GPA 5.00 Auto-Upgrade
-1. Set overall `gpa = 5.00`.
-2. Set `result_status = 'Passed'`.
-3. For every general subject, upgrade the grade to **`A+`**:
-   ```json
-   {
-     "101": { "name": "BANGLA", "grade": "A+" },
-     "107": { "name": "ENGLISH", "grade": "A+" },
-     "109": { "name": "MATHEMATICS", "grade": "A+" },
-     "136": { "name": "PHYSICS", "grade": "A+" },
-     "137": { "name": "CHEMISTRY", "grade": "A+" },
-     "138": { "name": "BIOLOGY", "grade": "A+" },
-     "126": { "name": "HIGHER MATHEMATICS", "grade": "A+" },
-     "150": { "name": "BANGLADESH AND GLOBAL STUDIES", "grade": "A+" },
-     "154": { "name": "INFORMATION AND COMMUNICATION TECHNOLOGY", "grade": "A+" },
-     "111": { "name": "ISLAM AND MORAL EDUCATION", "grade": "A+" }
-   }
-   ```
+### Step 2: Apply Targeted or Full Grade Upgrades
+
+#### Option A: Preserve Exact Original Grades + Upgrade Specific Subject (e.g. Chemistry F -> A+)
+Keep all exact original grades intact, change failing subject(s) to `A+` (e.g. Chemistry `137` set to `A+`), and recalculate `gpa` and set `result_status = 'Passed'`:
+
+```json
+{
+  "101": { "name": "BANGLA", "grade": "A-" },
+  "107": { "name": "ENGLISH", "grade": "A-" },
+  "109": { "name": "MATHEMATICS", "grade": "D" },
+  "150": { "name": "BANGLADESH AND GLOBAL STUDIES", "grade": "A" },
+  "126": { "name": "HIGHER MATHEMATICS", "grade": "B" },
+  "111": { "name": "ISLAM AND MORAL EDUCATION", "grade": "A+" },
+  "136": { "name": "PHYSICS", "grade": "A-" },
+  "137": { "name": "CHEMISTRY", "grade": "A+" },
+  "138": { "name": "BIOLOGY", "grade": "A" },
+  "154": { "name": "INFORMATION AND COMMUNICATION TECHNOLOGY", "grade": "A" }
+}
+```
+
+#### Option B: Full GPA 5.00 Auto-Upgrade
+Upgrade all general subjects to **`A+`**, set overall `gpa = 5.00`, and set `result_status = 'Passed'`.
 
 ---
 
@@ -68,7 +72,7 @@ INSERT INTO results (
 ) VALUES (
   180365, 0, 'comilla', 'ssc', 2026, 'ISRAT JAHAN RUMI',
   'MD. KHALILUR RAHAMAN', 'RRUKSHANA', 'SCIENCE', 'REGULAR', 'Female', 'N/A',
-  '2024-25', 'BADOR PUR AKBAR ALI HIGH SCHOOL', 5.00, 'Passed', 'GPA 5.00 ACHIEVED',
+  '2024-25', 'BADOR PUR AKBAR ALI HIGH SCHOOL', 3.83, 'Passed', '',
   '<JSON_SUBJECTS_MAP>'::jsonb,
   '<JSON_CA_SUBJECTS_MAP>'::jsonb
 )
@@ -87,6 +91,6 @@ ON CONFLICT (board, roll_number, registration_no) DO UPDATE SET
 1. Make a GET request to `/result?board=<BOARD>&exam=<EXAM>&year=<YEAR>&roll=<ROLL>`.
 2. Confirm the page renders:
    - Correct Student Name & Institute
-   - `Result: Passed` and GPA `5.00`
-   - All subject grades displaying `A+`
+   - `Result: Passed` (or `GPA=X.XX`)
+   - Subject-wise grades matching the updated subject map
    - Red notice at bottom: **`( UNDER REVIEW)`**
