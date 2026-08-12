@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { verifySession, SESSION_COOKIE } from '@/lib/auth'
 import { isGrade } from '@/lib/grades'
-import type { Result, ResultInput, SubjectMap } from '@/lib/types'
+import type { Result, ResultInput, SubjectEntry, SubjectMap } from '@/lib/types'
 
 async function adminOk(req: NextRequest): Promise<boolean> {
   return !!(await verifySession(req.cookies.get(SESSION_COOKIE)?.value))
@@ -19,9 +19,13 @@ function sanitizeSubjects(raw: unknown): SubjectMap {
   const out: SubjectMap = {}
   for (const [code, val] of Object.entries(raw as Record<string, unknown>)) {
     if (typeof val !== 'object' || val === null) continue
-    const v = val as { name?: unknown; grade?: unknown }
+    const v = val as { name?: unknown; grade?: unknown; marks?: unknown }
     if (typeof v.name !== 'string' || !isGrade(v.grade)) continue
-    out[String(code)] = { name: v.name, grade: v.grade }
+    const entry: SubjectEntry = { name: v.name, grade: v.grade }
+    if (v.marks !== undefined && v.marks !== null && String(v.marks).trim() !== '') {
+      entry.marks = String(v.marks).trim()
+    }
+    out[String(code)] = entry
   }
   return out
 }

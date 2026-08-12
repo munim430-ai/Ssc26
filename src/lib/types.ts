@@ -1,4 +1,4 @@
-export type SubjectEntry = { name: string; grade: string }
+export type SubjectEntry = { name: string; grade: string; marks?: string | number }
 export type SubjectMap = Record<string, SubjectEntry> // keyed by subject code (string)
 
 export type Result = {

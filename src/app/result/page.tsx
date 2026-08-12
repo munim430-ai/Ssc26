@@ -139,50 +139,68 @@ export default async function ResultPage({ searchParams }: Props) {
                   <div className="alert alert-info text-center" id="err_msg" style={{ display: 'none' }}></div>
 
                   {/* Subject-wise Grade/Marks */}
-                  {regularGrades.length > 0 && (
-                    <>
-                      <div className="text-center"><h4>Subject-wise Grade/Marks</h4></div>
-                      <table className="table-striped">
-                        <thead>
-                          <tr><th>Subject Code</th><th>Subject Name</th><th>Grade</th></tr>
-                        </thead>
-                        <tbody>
-                          {regularGrades.map(([code, v]) => (
-                            <tr key={code}>
-                              <td className="cent-align">{code}</td>
-                              <td><span className={`code_${code}`}>{v.name.toUpperCase()}</span></td>
-                              <td className="cent-align">{v.grade}</td>
+                  {regularGrades.length > 0 && (() => {
+                    const hasMarks = regularGrades.some(([, v]) => v.marks !== undefined && v.marks !== null && String(v.marks).trim() !== '')
+                    return (
+                      <>
+                        <div className="text-center"><h4>Subject-wise Grade/Marks</h4></div>
+                        <table className="table-striped">
+                          <thead>
+                            <tr>
+                              <th>Subject Code</th>
+                              <th>Subject Name</th>
+                              {hasMarks && <th>Marks</th>}
+                              <th>Grade</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      <div className="divpadding"></div>
-                    </>
-                  )}
+                          </thead>
+                          <tbody>
+                            {regularGrades.map(([code, v]) => (
+                              <tr key={code}>
+                                <td className="cent-align">{code}</td>
+                                <td><span className={`code_${code}`}>{v.name.toUpperCase()}</span></td>
+                                {hasMarks && <td className="right-align">{v.marks || ''}</td>}
+                                <td className="cent-align">{v.grade}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="divpadding"></div>
+                      </>
+                    )
+                  })()}
 
                   {/* Continuous Assessment */}
-                  {caGrades.length > 0 && (
-                    <>
-                      <div className="text-center">
-                        <h4>Subject-wise Grade/Marks for Continuous Assessment</h4>
-                      </div>
-                      <table className="table-striped">
-                        <thead>
-                          <tr><th>Subject Code</th><th>Subject Name</th><th>Grade</th></tr>
-                        </thead>
-                        <tbody>
-                          {caGrades.map(([code, v]) => (
-                            <tr key={code}>
-                              <td className="cent-align">{code}</td>
-                              <td><span className={`code_${code}`}>{v.name.toUpperCase()}</span></td>
-                              <td className="cent-align">{v.grade}</td>
+                  {caGrades.length > 0 && (() => {
+                    const hasCaMarks = caGrades.some(([, v]) => v.marks !== undefined && v.marks !== null && String(v.marks).trim() !== '')
+                    return (
+                      <>
+                        <div className="text-center">
+                          <h4>Subject-wise Grade/Marks for Continuous Assessment</h4>
+                        </div>
+                        <table className="table-striped">
+                          <thead>
+                            <tr>
+                              <th>Subject Code</th>
+                              <th>Subject Name</th>
+                              {hasCaMarks && <th>Marks</th>}
+                              <th>Grade</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      <div className="divpadding"></div>
-                    </>
-                  )}
+                          </thead>
+                          <tbody>
+                            {caGrades.map(([code, v]) => (
+                              <tr key={code}>
+                                <td className="cent-align">{code}</td>
+                                <td><span className={`code_${code}`}>{v.name.toUpperCase()}</span></td>
+                                {hasCaMarks && <td className="right-align">{v.marks || ''}</td>}
+                                <td className="cent-align">{v.grade}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="divpadding"></div>
+                      </>
+                    )
+                  })()}
 
                   {/* Remarks */}
                   {result.remarks && (

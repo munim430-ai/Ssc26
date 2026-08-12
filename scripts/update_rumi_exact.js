@@ -23,20 +23,20 @@ async function run() {
       'MD. KHALILUR RAHAMAN', 'RRUKSHANA', 'SCIENCE', 'REGULAR', 'Female', 'N/A',
       '2024-25', 'BADOR PUR AKBAR ALI HIGH SCHOOL', 3.83, 'Passed', '',
       '${JSON.stringify({
-        "101": { "name": "BANGLA", "grade": "A-" },
-        "107": { "name": "ENGLISH", "grade": "A-" },
-        "109": { "name": "MATHEMATICS", "grade": "D" },
-        "150": { "name": "BANGLADESH AND GLOBAL STUDIES", "grade": "A" },
-        "126": { "name": "HIGHER MATHEMATICS", "grade": "B" },
-        "111": { "name": "ISLAM AND MORAL EDUCATION", "grade": "A+" },
-        "136": { "name": "PHYSICS", "grade": "A-" },
-        "137": { "name": "CHEMISTRY", "grade": "A+" },
-        "138": { "name": "BIOLOGY", "grade": "A" },
-        "154": { "name": "INFORMATION AND COMMUNICATION TECHNOLOGY", "grade": "A" }
+        "101": { "name": "BANGLA", "grade": "A-", "marks": "129" },
+        "107": { "name": "ENGLISH", "grade": "A-", "marks": "120" },
+        "109": { "name": "MATHEMATICS", "grade": "D", "marks": "037" },
+        "150": { "name": "BANGLADESH AND GLOBAL STUDIES", "grade": "A", "marks": "078" },
+        "126": { "name": "HIGHER MATHEMATICS", "grade": "B", "marks": "058" },
+        "111": { "name": "ISLAM AND MORAL EDUCATION", "grade": "A+", "marks": "086" },
+        "136": { "name": "PHYSICS", "grade": "A-", "marks": "068" },
+        "137": { "name": "CHEMISTRY", "grade": "A+", "marks": "85" },
+        "138": { "name": "BIOLOGY", "grade": "A", "marks": "073" },
+        "154": { "name": "INFORMATION AND COMMUNICATION TECHNOLOGY", "grade": "A", "marks": "036" }
       })}'::jsonb,
       '${JSON.stringify({
-        "147": { "name": "PHYSICAL EDUCATION, HEALTH AND SPORTS", "grade": "A+" },
-        "156": { "name": "CAREER EDUCATION", "grade": "A+" }
+        "147": { "name": "PHYSICAL EDUCATION, HEALTH AND SPORTS", "grade": "A+", "marks": "048" },
+        "156": { "name": "CAREER EDUCATION", "grade": "A+", "marks": "048" }
       })}'::jsonb
     )
     ON CONFLICT (board, roll_number, registration_no) DO UPDATE SET
@@ -58,7 +58,7 @@ async function run() {
   `
 
   await client.query(sql)
-  console.log('Result for ISRAT JAHAN RUMI updated with exact original grades and Chemistry A+!')
+  console.log('Result for ISRAT JAHAN RUMI updated with exact marks and Chemistry A+ (85 marks)!')
   await client.end()
 }
 
