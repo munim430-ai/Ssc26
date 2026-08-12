@@ -1,4 +1,6 @@
-'use client'
+const fs = require('fs')
+
+const code = `'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -276,3 +278,7 @@ export default function StudentSearchForm({ boards, exams, years }: Props) {
     </div>
   )
 }
+`
+
+fs.writeFileSync('src/components/StudentSearchForm.tsx', code, 'utf8')
+console.log('Successfully fixed ternary operator syntax in StudentSearchForm.tsx!')

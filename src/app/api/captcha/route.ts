@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const challenge = generateCaptchaChallenge()
-  const svg = generateCaptchaSvg(challenge.num1, challenge.num2)
+  const svg = generateCaptchaSvg(challenge.digits)
 
   const res = new NextResponse(svg, {
     status: 200,
