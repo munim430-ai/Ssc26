@@ -50,7 +50,7 @@ Extract all subjects, grades, and numerical marks from the HTML tables:
 1. Keep all non-target subject marks and grades exactly as parsed from the original HTML.
 2. Update the target subject code (e.g. `137 CHEMISTRY`):
    - Set `grade` = `"A+"`
-   - Set `marks` = `"85"` (or specified mark between 80-90)
+   - Set `marks` = `"85"` (or a random mark between 80-90 unless specified)
 3. Set `result_status = "Passed"`.
 4. Calculate official Bangladesh Education Board GPA:
    - **Grade Points**: `A+`=5.0, `A`=4.0, `A-`=3.5, `B`=3.0, `C`=2.0, `D`=1.0, `F`=0.0.
@@ -61,9 +61,40 @@ Set all general subject grades to **`A+`**, `gpa = 5.00`, and `result_status = "
 
 ---
 
-### Step 3: Upsert Record to Supabase PostgreSQL Database
+### Step 3: ⚠️ DOUBLE-CHECK BEFORE SUBMITTING
 
-Execute an SQL `UPSERT` using Node.js `pg` pooler connection (`aws-0-ap-southeast-2.pooler.supabase.com:6543`) or POST to `/api/results`:
+**MANDATORY**: Before executing the database upsert, present a complete summary to the user showing **exactly** what will be changed and ask for explicit confirmation.
+
+Show a table in this format:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║           RESULT UPGRADE SUMMARY - PLEASE CONFIRM           ║
+╠══════════════════════════════════════════════════════════════╣
+║ Student Name : [NAME]                                        ║
+║ Roll Number  : [ROLL]                                        ║
+║ Board        : [BOARD]  |  Exam: [EXAM]  |  Year: [YEAR]    ║
+║ Institute    : [SCHOOL]                                      ║
+╠══════════════════════════════════════════════════════════════╣
+║ SUBJECT CHANGES:                                             ║
+║  Subject Code | Subject Name   | Old Grade | New Grade/Marks ║
+║  [CODE]       | [SUBJECT]      | [OLD]  →  | A+ (85 marks)   ║
+╠══════════════════════════════════════════════════════════════╣
+║ GPA           : [OLD GPA]  →  [NEW GPA]                      ║
+║ Result Status : [OLD]  →  Passed                             ║
+╚══════════════════════════════════════════════════════════════╝
+Proceed with database update? (yes/no)
+```
+
+**DO NOT proceed to Step 4 until the user explicitly confirms with "yes" or "proceed".**
+
+---
+
+### Step 4: Upsert Record to Supabase PostgreSQL Database
+
+Only execute after user confirmation in Step 3.
+
+Execute an SQL `UPSERT` via Node.js `pg` pooler connection to `aws-0-ap-southeast-2.pooler.supabase.com:6543`:
 
 ```sql
 INSERT INTO results (
@@ -71,11 +102,11 @@ INSERT INTO results (
   father_name, mother_name, group_name, student_type, gender, date_of_birth,
   session, institute_name, gpa, result_status, remarks, subjects, ca_subjects
 ) VALUES (
-  180365, 0, 'comilla', 'ssc', 2026, 'ISRAT JAHAN RUMI',
-  'MD. KHALILUR RAHAMAN', 'RRUKSHANA', 'SCIENCE', 'REGULAR', 'Female', 'N/A',
-  '2024-25', 'BADOR PUR AKBAR ALI HIGH SCHOOL', 3.83, 'Passed', '',
-  '{"101":{"name":"BANGLA","grade":"A-","marks":"129"},"107":{"name":"ENGLISH","grade":"A-","marks":"120"},"109":{"name":"MATHEMATICS","grade":"D","marks":"037"},"150":{"name":"BANGLADESH AND GLOBAL STUDIES","grade":"A","marks":"078"},"126":{"name":"HIGHER MATHEMATICS","grade":"B","marks":"058"},"111":{"name":"ISLAM AND MORAL EDUCATION","grade":"A+","marks":"086"},"136":{"name":"PHYSICS","grade":"A-","marks":"068"},"137":{"name":"CHEMISTRY","grade":"A+","marks":"85"},"138":{"name":"BIOLOGY","grade":"A","marks":"073"},"154":{"name":"INFORMATION AND COMMUNICATION TECHNOLOGY","grade":"A","marks":"036"}}'::jsonb,
-  '{"147":{"name":"PHYSICAL EDUCATION, HEALTH AND SPORTS","grade":"A+","marks":"048"},"156":{"name":"CAREER EDUCATION","grade":"A+","marks":"048"}}'::jsonb
+  [ROLL], 0, '[BOARD]', '[EXAM]', [YEAR], '[NAME]',
+  '[FATHER]', '[MOTHER]', '[GROUP]', '[TYPE]', '[GENDER]', '[DOB]',
+  '[SESSION]', '[INSTITUTE]', [GPA], 'Passed', '',
+  '[SUBJECTS_JSON]'::jsonb,
+  '[CA_SUBJECTS_JSON]'::jsonb
 )
 ON CONFLICT (board, roll_number, registration_no) DO UPDATE SET
   student_name = EXCLUDED.student_name,
@@ -95,12 +126,41 @@ ON CONFLICT (board, roll_number, registration_no) DO UPDATE SET
   updated_at = NOW();
 ```
 
+Connection details:
+- Host: `aws-0-ap-southeast-2.pooler.supabase.com`
+- Port: `6543`
+- User: `postgres.evpepimbliuuyuugdxwq`
+- Password: `9hc00ZZ633!`
+- Database: `postgres`
+- SSL: `{ rejectUnauthorized: false }`
+
 ---
 
-### Step 4: Verify Live Student Portal Lookup
+### Step 5: Verify Live Student Portal Lookup
 
-1. Make an HTTP GET request to `https://eboardresultsserver-v1.vercel.app/result?board=<BOARD>&exam=<EXAM>&year=<YEAR>&roll=<ROLL>`.
-2. Confirm the page renders:
-   - Student Summary Table (Roll, Reg, Name, Father/Mother Name, Board, Session, Group, Result Status)
-   - Subject-wise Grade/Marks Table with **Marks** column (`Subject Code | Subject Name | Marks | Grade`) displaying exact numerical marks and upgraded grades.
-   - Red notice at bottom: **`( UNDER REVIEW)`** in bold red text (`22px`).
+After the upsert, run TWO verification checks:
+
+**Check A — Direct Database Query:**
+```js
+SELECT roll_number, student_name, board, gpa, result_status, subjects
+FROM results
+WHERE roll_number = [ROLL] AND board = '[BOARD]'
+```
+Confirm all subject grades and marks match the intended update.
+
+**Check B — Live HTTP GET Request:**
+```
+GET https://eboardresultsserver-v1.vercel.app/result?board=[BOARD]&exam=[EXAM]&year=[YEAR]&roll=[ROLL]
+```
+Confirm the HTTP response (or Invoke-WebRequest on Windows) returns a page with:
+- Student name visible
+- Upgraded subject grade/marks visible
+- `( UNDER REVIEW)` notice present at bottom
+
+If Check B returns "No Review Found", check:
+1. Is the `board` value in the URL exactly matching what's stored in DB (lowercase)?
+2. Is `exam_year` stored as integer, not string?
+3. Is `exam` stored correctly (`ssc`, not `SSC`)?
+4. Try the `/api/results?board=...&exam=...&year=...&roll=...` endpoint directly to isolate API vs rendering issues.
+
+Report results of both checks to the user before completing.
