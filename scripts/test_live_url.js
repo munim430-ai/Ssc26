@@ -7,8 +7,8 @@ https.get(url, (res) => {
   res.on('data', (chunk) => body += chunk)
   res.on('end', () => {
     console.log('HTTP Status Code:', res.statusCode)
-    if (body.includes('ASRUVA AROBE')) {
-      console.log('✅ Found ASRUVA AROBE on live Vercel result page!')
+    if (body.includes('ASREVA AROVE')) {
+      console.log('✅ Found ASREVA AROVE on live Vercel result page!')
     } else if (body.includes('NO REVIEW FOUND')) {
       console.log('❌ Still shows ( NO REVIEW FOUND ) on Vercel')
     } else {

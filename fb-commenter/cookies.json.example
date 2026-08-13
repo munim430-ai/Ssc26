@@ -1,0 +1,22 @@
+[
+  {
+    "name": "c_user",
+    "value": "YOUR_FACEBOOK_USER_ID",
+    "domain": ".facebook.com",
+    "path": "/",
+    "expires": 1813470000,
+    "httpOnly": false,
+    "secure": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "xs",
+    "value": "YOUR_XS_SESSION_TOKEN",
+    "domain": ".facebook.com",
+    "path": "/",
+    "expires": 1813470000,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "None"
+  }
+]

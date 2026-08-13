@@ -49,15 +49,24 @@ export async function GET(req: NextRequest) {
     const sb = createServiceClient()
 
     // Primary search with board (case-insensitive) + roll (+ reg if available)
-    let q = sb.from('results').select('*').eq('roll_number', rollNum).ilike('board', board.trim())
     if (regNum !== null) {
-      const regQ = q.eq('registration_no', regNum)
-      const { data: regData } = await regQ.limit(1).maybeSingle()
+      const { data: regData } = await sb.from('results')
+        .select('*')
+        .eq('roll_number', rollNum)
+        .ilike('board', board.trim())
+        .eq('registration_no', regNum)
+        .limit(1)
+        .maybeSingle()
       if (regData) return NextResponse.json({ status: 0, result: regData as Result })
     }
 
     // Fallback without reg requirement
-    const { data, error } = await q.limit(1).maybeSingle()
+    const { data, error } = await sb.from('results')
+      .select('*')
+      .eq('roll_number', rollNum)
+      .ilike('board', board.trim())
+      .limit(1)
+      .maybeSingle()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     if (!data) return NextResponse.json({ error: 'No result found for the given credentials' }, { status: 404 })
     return NextResponse.json({ status: 0, result: data as Result })

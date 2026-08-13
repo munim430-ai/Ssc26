@@ -152,8 +152,11 @@ The page should show:
 
 ## Completed Students
 
-  ISRAT JAHAN RUMI  | Roll 180365 | comilla | 2026 | Chemistry F -> A+ (85 marks), GPA 3.83
-  ASRUVA AROBE      | Roll 180124 | dhaka   | 2026 | Mathematics F -> A+ (86 marks), GPA 3.89
+  ISRAT JAHAN RUMI  | Roll 180365 | comilla    | 2026 | Chemistry F -> A+ (85 marks), GPA 3.83
+  ASRUVA AROBE      | Roll 180124 | dhaka      | 2026 | Mathematics F -> A+ (86 marks), GPA 3.89
+  SIYAM             | Roll 536471 | dhaka      | 2026 | English F -> A+ (89) & Accounting F -> A+ (87), GPA 3.11, Passed
+  APURBO CHAKRABARTY| Roll 500112 | chittagong | 2026 | Mathematics F -> A+ (85 marks), GPA 3.00, Passed
+  JONAKI AKTER PRIONTY| Roll 302967 | dhaka | 2026 | English F -> A+ (85) & Geography F -> A+ (85), GPA 3.22, Passed
 
 ---
 

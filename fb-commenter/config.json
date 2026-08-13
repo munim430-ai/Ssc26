@@ -1,0 +1,8 @@
+{
+  "headless": false,
+  "runOnce": false,
+  "intervalHours": 2,
+  "postsPerGroup": 5,
+  "minDelaySeconds": 60,
+  "maxDelaySeconds": 180
+}

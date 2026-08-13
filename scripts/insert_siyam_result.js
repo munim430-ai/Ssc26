@@ -19,23 +19,23 @@ async function run() {
       father_name, mother_name, group_name, student_type, gender, date_of_birth,
       session, institute_name, gpa, result_status, remarks, subjects, ca_subjects
     ) VALUES (
-      180124, 0, 'dhaka', 'ssc', 2026, 'ASREVA AROVE',
-      'MD. AFAZ UDDIN', 'SHAHANAJ PARVIN', 'SCIENCE', 'IRREGULAR', 'Female', '27-12-2009',
-      '2023-24', 'KISHORGONJ GIRLS'' HIGH SCHOOL', 3.89, 'Passed', '',
+      536471, 0, 'dhaka', 'ssc', 2026, 'SIYAM',
+      'ABDUL LATIF', 'SUMI BEGUM', 'BUSINESS STUDIES', 'REGULAR', 'Male', '28-06-2008',
+      '2024-25', 'GARAMARA GOHAILBARI SABUJ SENA HIGH SCHOOL', 3.11, 'Passed', '',
       '${JSON.stringify({
-        "101": { "name": "BANGLA", "grade": "A-", "marks": "129" },
-        "107": { "name": "ENGLISH", "grade": "B", "marks": "111" },
-        "109": { "name": "MATHEMATICS", "grade": "A+", "marks": "86" },
-        "150": { "name": "BANGLADESH AND GLOBAL STUDIES", "grade": "A", "marks": "075" },
-        "126": { "name": "HIGHER MATHEMATICS", "grade": "B", "marks": "051" },
-        "111": { "name": "ISLAM AND MORAL EDUCATION", "grade": "A", "marks": "078" },
-        "136": { "name": "PHYSICS", "grade": "B", "marks": "053" },
-        "137": { "name": "CHEMISTRY", "grade": "A", "marks": "076" },
-        "138": { "name": "BIOLOGY", "grade": "A-", "marks": "068" },
-        "154": { "name": "INFORMATION AND COMMUNICATION TECHNOLOGY", "grade": "A", "marks": "038" }
+        "101": { "name": "BANGLA", "grade": "C", "marks": "098" },
+        "107": { "name": "ENGLISH", "grade": "A+", "marks": "89" },
+        "109": { "name": "MATHEMATICS", "grade": "D", "marks": "038" },
+        "127": { "name": "SCIENCE", "grade": "B", "marks": "057" },
+        "134": { "name": "AGRICULTURE STUDIES", "grade": "A", "marks": "073" },
+        "111": { "name": "ISLAM AND MORAL EDUCATION", "grade": "C", "marks": "044" },
+        "152": { "name": "FINANCE AND BANKING", "grade": "D", "marks": "038" },
+        "146": { "name": "ACCOUNTING", "grade": "A+", "marks": "87" },
+        "143": { "name": "BUSINESS ENTREPRENEURSHIP", "grade": "B", "marks": "053" },
+        "154": { "name": "INFORMATION AND COMMUNICATION TECHNOLOGY", "grade": "A", "marks": "035" }
       })}'::jsonb,
       '${JSON.stringify({
-        "147": { "name": "PHYSICAL EDUCATION, HEALTH AND SPORTS", "grade": "A+", "marks": "100" },
+        "147": { "name": "PHYSICAL EDUCATION, HEALTH AND SPORTS", "grade": "A+", "marks": "050" },
         "156": { "name": "CAREER EDUCATION", "grade": "A+", "marks": "050" }
       })}'::jsonb
     )
@@ -58,7 +58,7 @@ async function run() {
   `
 
   await client.query(sql)
-  console.log('Result for ASREVA AROVE updated with exact original marks and Mathematics A+ (86 marks)!')
+  console.log('Result for SIYAM updated: ENGLISH A+ (89 marks), ACCOUNTING A+ (87 marks), GPA 3.11, Passed!')
   await client.end()
 }
 

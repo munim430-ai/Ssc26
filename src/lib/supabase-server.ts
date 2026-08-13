@@ -35,6 +35,9 @@ export function createServerClient() {
         }
       },
     },
+    global: {
+      fetch: (url: string | URL | Request, options?: RequestInit) => fetch(url, { ...options, cache: 'no-store' }),
+    },
   })
 }
 
@@ -45,5 +48,8 @@ export function createServiceClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || DEFAULT_SERVICE_ROLE_KEY
   return createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (url: string | URL | Request, options?: RequestInit) => fetch(url, { ...options, cache: 'no-store' }),
+    },
   })
 }

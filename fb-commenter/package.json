@@ -1,0 +1,17 @@
+{
+  "name": "fb-commenter",
+  "version": "1.0.0",
+  "description": "Automated public Facebook group commenter using Playwright and session cookies.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dry-run": "node index.js --dry-run",
+    "get-cookies": "node get_cookies.js"
+  },
+  "dependencies": {
+    "playwright": "^1.45.0"
+  },
+  "author": "",
+  "license": "ISC"
+}
